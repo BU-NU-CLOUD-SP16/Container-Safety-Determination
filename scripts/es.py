@@ -16,26 +16,53 @@ es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
 #put what ever hash in dstdir into elasticsearch
 #indexName => Ubuntu14.04
 #doc_type
-def saveDir(dstdir , indexName):
-    #TODO: filter suffix: .sdbf
-    os.chdir(dstdir)
-    for root, subdirs, files in os.walk(dstdir):
-        for filename in files:
-            file_path = os.path.join(root, filename)
-            file_dest = file_path.replace(srcdir,dstdir,1)
-            sdhashFile = open(filename , "r")
-            hashLine = sdhashFile.next()
-            print hashLine
-            while hashLine:
-                print 'got inside'
-                hashName = hashLine.split(':')[3]
-                #get suffix from filename and set docType
-                saveItem(indexName , 'py' , hashName , hashLine)
-                hashLine = sdhashFile.next()
-                print hashLine
 
-#save one single file into elasticsearch
-def saveItem(indexName , docType , hashName , hashLine):
+def get_SDBF_files(list_of_files):
+    '''
+    Filters all the filenames that are not '.sdbf' type.
+    Takes as input a list of filenames (strings) and returns an updates list with only the sdbf filenames
+
+    :param list_of_files: list
+    :return: updated_list: list
+    '''
+    return [filename for filename in list_of_files if filename.split('.')[-1] == 'sdbf']
+
+def saveDir(dstdir , indexName):
+    '''
+    Saves the all the hashes from dstdir into the Elasticsearch index provided
+    :param dstdir: string
+    :param indexName: string
+    :return:
+    '''
+
+    os.chdir(dstdir)    #commandline 'cd dstdir'
+    for root, subdirs, files in os.walk(dstdir):
+
+        sdbf_files = get_SDBF_files(files) #get a list of all the files with a '.sdbf' suffix
+
+        for filename in sdbf_files: #iterate over all the files in the 'dstdir' directory
+            file_path = os.path.join(root, filename) #get filepath
+            # SUGGESTION: can't we just do "file_path = root + filename" ? It would be more readable
+
+            file_dest = file_path.replace(srcdir, dstdir, 1)  # set file destination
+
+            sdhashFile = open(filename , "r")
+
+            for line in sdhashFile: #iterate over each line in the sdbf file
+                print 'got inside'
+                hashName = line.split(':')[3]
+                put_in_Elastic(indexName, 'py', hashName, line) #get suffix from filename and set docType
+
+def put_in_Elastic(indexName , docType , hashName , hashLine):
+    '''
+    Saves a single hash into the elasticsearch index provided
+
+    :param indexName:
+    :param docType:
+    :param hashName:
+    :param hashLine:
+    :return:
+    '''
     print 'saving item:' + hashName
     res = es.index(
         #ubuntu14.04
