@@ -8,5 +8,5 @@ EsCfg = {
     #source file dir
     'srcdir' : './',
     #dest file dir, save sdbf files
-    'dstdir' : './hash_test'
+    'dstdir' : './testHash'
 }
