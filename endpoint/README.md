@@ -14,6 +14,7 @@ Copy the template to settings.ini and then fill the fields required in that file
 By default, the server listens on 0.0.0.0 port 9999. If you want to change it 
 to custom ip and port, you can modify those values in endpoint.pp or can provide
 it as input arguments to the script by modifying it to read input arguments.
+
 `bash$ python endpoint.py`
 
 ## Hacks done
