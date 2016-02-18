@@ -1,8 +1,3 @@
-## How to use settings_template.ini
-Copy the template to settings.ini and then fill the fields required in that file.
-
-`bash$ cp settings_template.ini settings.ini`
-
 ## Flask setup
 Install python-pip on your machine and then use pip to install flask.
 
@@ -10,10 +5,16 @@ Install python-pip on your machine and then use pip to install flask.
 
 [flask installation link](http://flask.pocoo.org/docs/0.10/installation/)
 
+## How to use settings_template.ini
+Copy the template to settings.ini and then fill the fields required in that file.
+
+`bash$ cp settings_template.ini settings.ini`
+
 ## Running the server
 By default, the server listens on 0.0.0.0 port 9999. If you want to change it 
 to custom ip and port, you can modify those values in endpoint.pp or can provide
 it as input arguments to the script by modifying it to read input arguments.
+`bash$ python endpoint.py`
 
 ## Hacks done
 As of on [02/18/16], we found that registry v2 was not returning us the tag of 
