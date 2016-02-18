@@ -1,0 +1,16 @@
+registry:
+  restart: always
+  image: registry:2.3
+  ports:
+    - 5000:5000
+  environment:
+    REGISTRY_HTTP_TLS_CERTIFICATE: /certs/host.crt
+    REGISTRY_HTTP_TLS_KEY: /certs/host.key
+    REGISTRY_AUTH: htpasswd
+    REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+    REGISTRY_AUTH_HTPASSWD_REALM: "Registry Realm"
+  volumes:
+    - /var/lib/registry:/var/lib/registry
+    - /opt/docker/registry:/certs
+    - /opt/docker/auth:/auth
+    - ./config.yml:/etc/docker/registry/config.yml
