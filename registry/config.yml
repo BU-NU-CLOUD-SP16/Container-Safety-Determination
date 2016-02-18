@@ -1,0 +1,20 @@
+version: 0.1
+log:
+  fields:
+    service: registry
+storage:
+    cache:
+        layerinfo: inmemory
+    filesystem:
+        rootdirectory: /var/lib/registry
+http:
+    addr: :5000
+notifications:
+    endpoints:
+        - name: alistener
+          url: http://129.10.3.157:9999/test
+          headers:
+            Authorization: [Bearer ]
+          timeout: 500ms
+          threshold: 5
+          backoff: 1s

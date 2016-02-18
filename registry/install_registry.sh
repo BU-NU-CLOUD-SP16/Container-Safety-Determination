@@ -128,8 +128,8 @@ gen_host
 sign_cert
 
 # Install ca-cert for docker
-mkdir -p $DOCKERCERTS/$1.$2
-cp ca.crt $DOCKERCERTS/$1.$2/
+mkdir -p $DOCKERCERTS/$1:$2
+cp ca.crt $DOCKERCERTS/$1:$2/
 
 # add to system's rootca authority (for ubuntu)
 cp ca.crt /usr/local/share/ca-certificates/$1.crt
@@ -157,7 +157,7 @@ docker run --entrypoint htpasswd registry:2 -Bbn $uname $password \
 cat > docker-compose.yml << EOF
 registry:
   restart: always
-  image: registry:2
+  image: registry:2.1.1
   ports:
     - $2:5000
   environment:
