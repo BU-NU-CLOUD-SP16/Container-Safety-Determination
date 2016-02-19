@@ -2,7 +2,7 @@
 File requires input:
     a dest dir in esCfg file, we will find out files with suffix sdbf and put every line in that file into elasticsearch
 To Retrieve:
-    search for filename(without directory) from a index(e.g. ubuntu14.04), expected to get every 'bin' from different directory
+    search for filename(with or without directory) from a index(e.g. ubuntu14.04), expected to get every 'bin' from different directory
 '''
 from elasticsearch import Elasticsearch
 import json
@@ -55,6 +55,7 @@ def saveDir(dstdir , indexName):
             sdhashFile = open(filename , "r")
 
             for line in sdhashFile: #iterate over each line in the sdbf file
+            #TODO get pwd and append hashName
                 #add dir before name(src dir + hashName, ('/'.join))
                 dirFileName = '/'.join(srcdir.split('/').append(hashName))
                 #get file name from sdhash(with suffix if exist)
@@ -94,6 +95,7 @@ def put_in_Elastic(indexName , docType , dirFileName , hashLine):
 
 #search a file in elasticsearch
 def getHashByFileName(indexName , fileName):
+    #TODO match id instead of body
     res = es.search(index=indexName, body={"query": {"match": {'sdhash':fileName}}})
     #didn't consider multi-match or partial match yet
     print res
