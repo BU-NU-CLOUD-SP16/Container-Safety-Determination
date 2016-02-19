@@ -1,3 +1,9 @@
+'''
+File requires input:
+    a dest dir in esCfg file, we will find out files with suffix sdbf and put every line in that file into elasticsearch
+To Retrieve:
+    search for filename(without directory) from a index(e.g. ubuntu14.04), expected to get every 'bin' from different directory
+'''
 from elasticsearch import Elasticsearch
 import json
 import os
@@ -49,21 +55,30 @@ def saveDir(dstdir , indexName):
             sdhashFile = open(filename , "r")
 
             for line in sdhashFile: #iterate over each line in the sdbf file
-                print 'got inside'
+                #add dir before name(src dir + hashName, ('/'.join))
+                dirFileName = '/'.join(srcdir.split('/').append(hashName))
+                #get file name from sdhash(with suffix if exist)
                 hashName = line.split(':')[3]
-                put_in_Elastic(indexName, 'py', hashName, line) #get suffix from filename and set docType
+                #split hashName, try to get suffix.  If no suffix, ...
+                docType = hashName.split('.')
+                if len(docType) > 1:
+                    docType = docType[-1]
+                else:
+                    #TODO how to detect the file type without suffix
+                    docType = 'bin'
+                put_in_Elastic(indexName, docType , dirFileName, line) #get suffix from filename and set docType
 
-def put_in_Elastic(indexName , docType , hashName , hashLine):
+def put_in_Elastic(indexName , docType , dirFileName , hashLine):
     '''
     Saves a single hash into the elasticsearch index provided
 
     :param indexName:
     :param docType:
-    :param hashName:
+    :param dirFileName:
     :param hashLine:
     :return:
     '''
-    print 'saving item:' + hashName
+    print 'saving item:' + dirFileName
     res = es.index(
         #ubuntu14.04
         index = indexName,
@@ -71,7 +86,7 @@ def put_in_Elastic(indexName , docType , hashName , hashLine):
         doc_type = docType,
 
         #/usr/bin/ls
-        id = hashName,
+        id = dirFileName,
         # sdhash string, arg need to be json-like or dice?
         body = {'sdhash':hashLine}
     )
@@ -83,7 +98,9 @@ def getHashByFileName(indexName , fileName):
     #didn't consider multi-match or partial match yet
     print res
     #TODO: this line might fail if no hits?
-    return str(res['hits']['hits'][0]['_source']['sdhash'])
+    # return str(res['hits']['hits'][0]['_source']['sdhash'])
+    #return result directly
+    return res
 
 def deleteIndex(indexName):
     print "U sure you wanna delete it?(Y / N)"
@@ -95,7 +112,7 @@ def deleteIndex(indexName):
 
 if __name__ == '__main__':
     #try save whatever in dest dir into index: ubuntu14.04
-    #res = saveDir(dstdir , 'ubuntu14.04')
+    res = saveDir(dstdir , 'ubuntu14.04')
     #res = getHashByFileName('ubuntu14.04' , '000')
-    deleteIndex('ubuntu14.04')
+    #deleteIndex('ubuntu14.04')
 
