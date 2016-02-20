@@ -43,30 +43,27 @@ def saveDir(dstdir , indexName):
 
     os.chdir(dstdir)    #commandline 'cd dstdir'
     for root, subdirs, files in os.walk(dstdir):
-
         sdbf_files = get_SDBF_files(files) #get a list of all the files with a '.sdbf' suffix
-
         for filename in sdbf_files: #iterate over all the files in the 'dstdir' directory
             file_path = os.path.join(root, filename) #get filepath
             # SUGGESTION: can't we just do "file_path = root + filename" ? It would be more readable
-
+            # you will get used to it, and it should be "file_path = root + '/' + filename", not a very good style i think
+            #TODO, correct directory problem
             file_dest = file_path.replace(srcdir, dstdir, 1)  # set file destination
-
             sdhashFile = open(filename , "r")
-
             for line in sdhashFile: #iterate over each line in the sdbf file
-            #TODO get pwd and append hashName
-                #add dir before name(src dir + hashName, ('/'.join))
-                dirFileName = '/'.join(srcdir.split('/').append(hashName))
+                #TODO get cwd and append hashName
+                curdir = os.getcwd()
                 #get file name from sdhash(with suffix if exist)
                 hashName = line.split(':')[3]
+                dirFileName = curdir + '/' + hashName
                 #split hashName, try to get suffix.  If no suffix, ...
                 docType = hashName.split('.')
                 if len(docType) > 1:
                     docType = docType[-1]
                 else:
-                    #TODO how to detect the file type without suffix
-                    docType = 'bin'
+                    #since doc type is not that important
+                    docType = 'unknown'
                 put_in_Elastic(indexName, docType , dirFileName, line) #get suffix from filename and set docType
 
 def put_in_Elastic(indexName , docType , dirFileName , hashLine):
@@ -95,14 +92,18 @@ def put_in_Elastic(indexName , docType , dirFileName , hashLine):
 
 #search a file in elasticsearch
 def getHashByFileName(indexName , fileName):
-    #TODO match id instead of body
-    res = es.search(index=indexName, body={"query": {"match": {'sdhash':fileName}}})
+    #TODO replace it with python api
+    res = requests.get(host + ':' + str(port) + '/' + indexName + '/' + fileType + '/' + fileName)
     #didn't consider multi-match or partial match yet
-    print res
-    #TODO: this line might fail if no hits?
-    # return str(res['hits']['hits'][0]['_source']['sdhash'])
+    if res.ok:
+        print "found match"
+        print res.json()
+        return res.json()
+    else:
+        print "return code is not 200"
+        return res
     #return result directly
-    return res
+    
 
 def deleteIndex(indexName):
     print "U sure you wanna delete it?(Y / N)"
