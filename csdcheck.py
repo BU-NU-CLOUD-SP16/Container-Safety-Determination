@@ -28,8 +28,8 @@ TEMP_DIR = "/tmp/csdproject"
 def exec_cmd(cmd):
     p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
     output, errors = p.communicate()
-    print errors
-    #print output
+    if len(errors.strip()) > 0:
+        print errors
     return output
     # todo handle errors
 
@@ -76,21 +76,41 @@ def make_dir(path):
             pass
 
 
-def hash_image(imagename):
-    imagetar = os.path.join(tmpdir, 'image.tar')
-    imagedir = os.path.join(tmpdir, 'image')
-    make_dir(TEMP_DIR)
-    make_dir(imagetar)
-    make_dir(imagedir)
+# For each file in srcdir, calculate sdhash and write to file in dstdir
+# Example: sdhash for file srcdir/usr/local/bin/prog1 will be written to dstdir/usr/local/bin/prog1
+def calculate_sdhash(srcdir, dstdir):
+    for root, subdirs, files in os.walk(srcdir):
+        for subdir in subdirs:
+            sub_path = os.path.join(root, subdir)
+            sub_dest = sub_path.replace(srcdir, dstdir, 1)
+            if not os.path.exists(sub_dest):
+                os.makedirs(os.path.join(sub_dest))
 
+        for filename in files:
+            file_path = os.path.join(root, filename)
+            file_dest = file_path.replace(srcdir, dstdir, 1)
+
+            res = exec_cmd(['sdhash', file_path])
+            with open(file_dest, 'w') as f:
+                f.write(res)
+
+
+def hash_and_index(imagename):
+    imagetar = os.path.join(TEMP_DIR, 'image.tar')
+    imagedir = os.path.join(TEMP_DIR, 'image')
+    dstdir = os.path.join(TEMP_DIR, 'hashed_image')
+    make_dir(TEMP_DIR)
+    make_dir(imagedir)
+    make_dir(dstdir)
+
+    print imagename
     pull_image(imagename)
     save_image(imagetar, imagename)
     untar_image(imagetar, imagedir)
 
-    calculate_sdhash(imagedir, outputfile)
+    calculate_sdhash(imagedir, dstdir)
 
     #todo cleanup: remove tmp dir
-
 
 
 if "__name__" == "__main__":
@@ -98,4 +118,4 @@ if "__name__" == "__main__":
     # Example test: python csdcheck.py python:2.7.8-slim
     imagename = sys.argv[1]
 
-    hash_image(imagename)
+    hash_and_index(imagename)
