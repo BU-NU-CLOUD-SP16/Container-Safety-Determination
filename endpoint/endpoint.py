@@ -25,7 +25,11 @@ from flask import request
 import ConfigParser
 import requests
 import json
+import sys
 import os
+
+sys.path.append(os.getcwd() + "/../")
+from csdcheck import hash_and_index
 
 app = Flask(__name__)
 
@@ -83,7 +87,9 @@ def test():
 
                     if sorted(image_blocks) == sorted(blocks):
                         print "New image uploaded is: %s | tag: %s" % (repository, tag)
-                        #hash_and_index(host, repository, tag)
+                        host = temp[0].split("/")[2]
+                        image = host + "/" + repository + ":" + tag
+                        hash_and_index(image)
                         break
     return "Done", 200
 
