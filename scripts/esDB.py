@@ -33,6 +33,7 @@ def get_SDBF_files(list_of_files):
 '''
 #TODO: getting root(before /etc) from jeremy script and 
 get rid of what ever root before /etc when walking the dir and then save them into elasticsearch
+#UPDATE: dir+filename should be in sdhash coding, just use it
 '''
 def saveDir(dstdir , indexName):
     '''
@@ -42,31 +43,32 @@ def saveDir(dstdir , indexName):
     :return:
     '''
     i = 0
-    os.chdir(dstdir)    #commandline 'cd dstdir'
+    #commandline 'cd dstdir'
+    os.chdir(dstdir)    
     for root, subdirs, files in os.walk(os.getcwd()):
-        sdbf_files = get_SDBF_files(files) #get a list of all the files with a '.sdbf' suffix
-        for filename in sdbf_files: #iterate over all the files in the 'dstdir' directory
-            file_path = os.path.join(root, filename) #get filepath
-            # SUGGESTION: can't we just do "file_path = root + filename" ? It would be more readable
-            # you will get used to it, and it should be "file_path = root + '/' + filename", not a very good style i think
-            #TODO, correct directory problem
-            file_dest = file_path.replace(srcdir, dstdir, 1)  # set file destination
+        os.chdir(root)
+        #get a list of all the files with a '.sdbf' suffix
+        sdbf_files = files # get_SDBF_files(files)
+        #iterate over all the files in the 'dstdir' directory
+        for filename in sdbf_files: 
+            #get filepath
+            file_path = os.path.join(root, filename) 
+            # set file destination
+            file_dest = file_path.replace(srcdir, dstdir, 1)  
             sdhashFile = open(filename , "r")
-            for line in sdhashFile: #iterate over each line in the sdbf file
-                #TODO get cwd and append hashName
-                curdir = os.getcwd()
+            #iterate over each line in the sdbf file
+            for line in sdhashFile: 
                 #get file name from sdhash(with suffix if exist)
                 hashName = line.split(':')[3]
-                dirFileName = curdir + '/' + hashName
-                #split hashName, try to get suffix.  If no suffix, ...
-                docType = hashName.split('.')
+                #split hashName, try to get suffix.  If no suffix
+                docType = hashName.split('/')[-1].split('.')
                 if len(docType) > 1:
                     docType = docType[-1]
                 else:
                     #since doc type is not that important
                     docType = 'unknown'
                 #save item
-                put_in_Elastic(indexName, docType , dirFileName, line) #get suffix from filename and set docType
+                put_in_Elastic(indexName, docType , hashName, line) 
 
 def put_in_Elastic(indexName , docType , dirFileName , hashLine):
     '''
@@ -79,7 +81,7 @@ def put_in_Elastic(indexName , docType , dirFileName , hashLine):
     :return:            no return currently
     #TODO check RESTAPI return code and modify return value according to res
     '''
-    print 'saving item:' + dirFileName
+    #print 'saving item:' + dirFileName
     res = es.index(
         #ubuntu14.04
         index = indexName,

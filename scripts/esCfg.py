@@ -6,7 +6,7 @@ EsCfg = {
     #node name
     'nodeName'   : 'ccc-node',
     #source file dir
-    'srcdir' : './',
+    'srcdir' : './testHash/image',
     #dest file dir, save sdbf files
-    'dstdir' : './testHash'
+    'dstdir' : './testHash/hashed_image'
 }
