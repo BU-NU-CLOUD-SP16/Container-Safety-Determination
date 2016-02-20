@@ -30,6 +30,10 @@ def get_SDBF_files(list_of_files):
     return [filename for filename in list_of_files if filename.split('.')[-1] == 'sdbf']
 
 #TODO check time efficiency
+'''
+#TODO: getting root(before /etc) from jeremy script and 
+get rid of what ever root before /etc when walking the dir and then save them into elasticsearch
+'''
 def saveDir(dstdir , indexName):
     '''
     Saves the all the hashes from dstdir into the Elasticsearch index provided
