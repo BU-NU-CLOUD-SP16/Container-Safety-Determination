@@ -37,7 +37,6 @@ Saves the all the hashes from dstdir into the Elasticsearch index provided
 '''
 def saveDir(dstdir , indexName):
     #TODO check time efficiency
-    i = 0
     #commandline 'cd dstdir'
     os.chdir(dstdir)    
     for root, subdirs, files in os.walk(os.getcwd()):
@@ -97,6 +96,7 @@ def getHashByFileName(indexName , fileName):
         return
 
 '''
+TODO: pass the customer image name:tag as parameter, gonna use it when saving into judge index
 earch in elasticsearch using filename(full filename with dir), and compute similarity
 :param indexName:   string, reference index in elasticsearch e.g. ubuntu14.04(must be lower case)
 :param fileName:    string, should be filepath + filename that matches the reference
@@ -106,18 +106,55 @@ def judgeFileByFileName(indexName , fileName):
     #currently indexName should be ubuntu14.04
     fileDict = getHashByFileName(indexName , fileName)
     refSdhash = fileDict['_source']['sdhash']
-    #save into tempref.sdbf
+    os.system('rm -r ./tempCompare')
+    os.system('mkdir ./tempCompare')
+    os.system('touch ./tempCompare/tempref.sdbf')
+    #write searching result to reffile
+    temprefFile = open('./tempCompare/tempref.sdbf' , 'r+b')
+    temprefFile.write(refSdhash)
+    temprefFile.close()
     #calc current file into tempobj.sdbf
+    #!!!!filename, where can I read this file
+    os.system('sdhash ./' + fileName + ' -o ./tempCompare/tempobj')
     #compare tempref and tempobj > tempRes
+    os.system('sdhash -c ./tempCompare/tempref.sdbf ./tempCompare/tempobj.sdbf -t 0 > ./tempCompare/tempRes')
     #read tempRes
-    '''
-    if score == 100:
+    resfile = open('./tempCompare/tempRes')
+    resline = resfile.next()
+    score = resfile.split('|')[-1]
+    #remove \n
+    score = score[:-1]
+    if score == "100\n":
+        print fileName + ' match 100%'
         pass
     else:
-        #saveIntoJudgeIndex()
+        judgeIndex = 'judgeResult:' + indexName
+        #TODO if use put_in_Elastic, here the body will be {'sdhash': resline}.  Better change the key
+        put_in_Elastic(judgeIndex, 'judgeResult' , fileName, resline)
         pass
-    '''
     #clean up
+    os.system('rm -r ./tempCompare')
+
+'''
+Saves the all the hashes from dstdir into the Elasticsearch index provided
+:param dstdir:      string, directory where sdbf files are saved in previous step
+:param refIndexName:   string, index name in elasticsearch, e.g. ubuntu14.04(must be lower case)
+:return:
+'''
+def judgeDir(dstdir , refIndexName):
+    #TODO check time efficiency
+    #commandline 'cd dstdir'
+    os.chdir(dstdir)    
+    for root, subdirs, files in os.walk(os.getcwd()):
+        os.chdir(root)
+        #get a list of all the files with a '.sdbf' suffix
+        sdbf_files = files # get_SDBF_files(files)
+        #iterate over all the files in the 'dstdir' directory
+        for filename in sdbf_files: 
+            #get filepath
+            file_path = os.path.join(root, filename) 
+            #iterate over each line in the sdbf file
+            judgeFileByFileName(indexName, file_path) 
 
 def deleteIndex(indexName):
     print "U sure you wanna delete index: " + indexName + "?(Y / N)"
