@@ -34,10 +34,10 @@ def exec_cmd(cmd):
     # todo handle errors
 
 
-def untarlayers(imagedir):    
+def untarlayers(imagedir):
     for d in os.listdir(imagedir):
         layerdir = os.path.join(imagedir, d)
-        if os.path.isdir(layerdir):          
+        if os.path.isdir(layerdir):
             layertar = os.path.join(layerdir, 'layer.tar')
             exec_cmd(['tar', '-xvf', layertar, '-C', layerdir])
             os.remove(layertar)
@@ -58,12 +58,6 @@ def pull_image(imagename):
 def save_image(imagetar, imagename):
     print('docker save...')
     exec_cmd(['docker', 'save', '-o', imagetar, imagename])
-
-
-def calculate_sdhash(imagedir, outputfile):
-    print('sdhashing...')
-    outputfile = os.path.join(os.getcwd(), 'sdhashed')
-    exec_cmd(['sdhash', '-r', imagedir, '-o', outputfile])
 
 
 def make_dir(path):
@@ -90,9 +84,15 @@ def calculate_sdhash(srcdir, dstdir):
             file_path = os.path.join(root, filename)
             file_dest = file_path.replace(srcdir, dstdir, 1)
 
-            res = exec_cmd(['sdhash', file_path])
-            with open(file_dest, 'w') as f:
-                f.write(res)
+        gen_sdhash(file_path, file_dest, srcdir)
+
+
+def gen_sdhash(file_path, file_dest, srcdir):
+    os.chdir(srcdir)
+    path = file_path.split(srcdir)
+    res = exec_cmd(['sdhash', path[1][1:]])
+    with open(file_dest, 'w') as f:
+        f.write(res)
 
 
 def hash_and_index(imagename):
