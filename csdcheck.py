@@ -18,8 +18,8 @@
 
 import os
 import sys
+import json
 import errno
-import shutil
 import subprocess as sub
 
 TEMP_DIR = "/tmp/csdproject"
@@ -60,6 +60,69 @@ def save_image(imagetar, imagename):
     exec_cmd(['docker', 'save', '-o', imagetar, imagename])
 
 
+# Read a layer's json file and get ID of parent layer
+def get_parent(json_file):
+    with open(json_file) as data_file:
+        data = json.load(data_file)
+        if 'parent' in data:
+            return data['parent']
+    return None
+
+"""Combine all image layers into a single layer.
+If a file exists in multiple layer, only the latest file is kept.
+:param dest_dir: full-path output directory.
+:param base_path: full-path to directory containing layers
+:param layer: directory basename of layer to be parsed
+"""
+def flatten(dest_dir, base_path, layer):
+    json_file = os.path.join(base_path, layer, 'json')        
+    with open(json_file) as data_file:
+        data = json.load(data_file)
+        if 'parent' in data:
+            parent = data['parent']
+            flatten(dest_dir, base_path, parent) #recursive
+                
+        print('copying layer -- ', layer)
+        layer_path = os.path.join(base_path, layer)        
+        os.system('cp -r ' + layer_path + '/* ' + dest_dir)
+
+
+# Determine leaf layer by checking the json file of each layer..
+def get_leaf(imagedir):
+    layer_ids = set()
+    for f in os.listdir(imagedir):
+        # The name of each directory is a layer ID
+        if os.path.isdir(os.path.join(imagedir, f)):
+            layer_ids.add(f)
+
+    # Layers that are parents
+    parents = set()
+    for layer_id in layer_ids:
+        parent = get_parent(os.path.join(imagedir,layer_id,'json'))
+        if parent is not None:
+            parents.add(parent)
+
+    # The layer that is not in the list of parents must be a leaf
+    leaf = None
+    for lid in layer_ids:
+        if lid not in parents:
+            leaf = lid
+    
+    print('all_layers:parent_layers -- ', len(layer_ids), ':', len(parents))
+    if (len(layer_ids) - len(parents)) != 1 or leaf is None:
+        raise # image should only have one leaf
+    
+    return leaf
+
+
+def get_leaf_and_flatten(imagedir,dest_dir):
+    print('flatenning layers...')
+    if not os.path.isdir(dest_dir):
+        os.mkdir(flatdir)
+
+    leaf = get_leaf(imagedir)
+    flatten(dest_dir, imagedir, leaf)
+
 def make_dir(path):
     try:
         os.makedirs(path)
@@ -77,7 +140,7 @@ def calculate_sdhash(srcdir, dstdir):
         for subdir in subdirs:
             sub_path = os.path.join(root, subdir)
             sub_dest = sub_path.replace(srcdir, dstdir, 1)
-            if not os.path.exists(sub_dest):
+            if not os.path.exists(sub_dest):	
                 os.makedirs(os.path.join(sub_dest))
 
         for filename in files:
@@ -98,9 +161,11 @@ def gen_sdhash(file_path, file_dest, srcdir):
 def hash_and_index(imagename):
     imagetar = os.path.join(TEMP_DIR, 'image.tar')
     imagedir = os.path.join(TEMP_DIR, 'image')
+    flat_imgdir = os.path.join(TEMP_DIR, 'flat_image')
     dstdir = os.path.join(TEMP_DIR, 'hashed_image')
     make_dir(TEMP_DIR)
     make_dir(imagedir)
+    make_dir(flat_imgdir)
     make_dir(dstdir)
 
     print imagename
@@ -108,12 +173,13 @@ def hash_and_index(imagename):
     save_image(imagetar, imagename)
     untar_image(imagetar, imagedir)
 
-    calculate_sdhash(imagedir, dstdir)
+    get_leaf_and_flatten(imagedir, flat_imgdir)
+    calculate_sdhash(flat_imgdir, dstdir)
 
     #todo cleanup: remove tmp dir
 
 
-if "__name__" == "__main__":
+if __name__ == "__main__":
     # imagename should be in the form image:tag
     # Example test: python csdcheck.py python:2.7.8-slim
     imagename = sys.argv[1]
