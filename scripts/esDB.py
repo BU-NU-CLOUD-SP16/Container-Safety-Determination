@@ -15,7 +15,10 @@ srcdir = EsCfg['srcdir']
 host = EsCfg['host']
 port = EsCfg['port']
 nodeName = EsCfg['nodeName']
-es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+
+def getEsConn(host , port):
+    es = Elasticsearch([{'host': host, 'port': port}])
+    return es
 
  
 '''
@@ -70,6 +73,7 @@ Saves a single hash into the elasticsearch index provided
 #TODO check RESTAPI return code and modify return value according to res
 '''
 def put_in_Elastic(indexName , docType , dirFileName , hashLine):
+    es = getEsConn(host , port)
     print 'saving item:' + dirFileName
     res = es.index(
         #ubuntu14.04
@@ -86,6 +90,7 @@ def put_in_Elastic(indexName , docType , dirFileName , hashLine):
 
 #search a file in elasticsearch
 def getHashByFileName(indexName , fileName):
+    es = getEsConn(host , port)
     # Notice: fileName has to be full dir + filename format
     try:
         resDict = es.get(index = indexName , id = fileName)
@@ -127,7 +132,7 @@ def judgeFileByFileName(indexName , fileName):
     if score == "100\n":
         print fileName + ' match 100%'
         pass
-    else:
+    else:   
         judgeIndex = 'judgeResult:' + indexName
         #TODO if use put_in_Elastic, here the body will be {'sdhash': resline}.  Better change the key
         put_in_Elastic(judgeIndex, 'judgeResult' , fileName, resline)
