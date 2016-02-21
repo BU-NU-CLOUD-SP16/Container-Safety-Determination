@@ -17,31 +17,26 @@ port = EsCfg['port']
 nodeName = EsCfg['nodeName']
 es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
 
+ 
+'''
+Filters all the filenames that are not '.sdbf' type.
+Takes as input a list of filenames (strings) and returns an updates list with only the sdbf filenames
 
-#indexName => Ubuntu14.04
+:param list_of_files:   list, list of files in a directory
+:return: updated_list:  list, list of sdbf files filtered
+'''
 def get_SDBF_files(list_of_files):
-    '''
-    Filters all the filenames that are not '.sdbf' type.
-    Takes as input a list of filenames (strings) and returns an updates list with only the sdbf filenames
-
-    :param list_of_files:   list, list of files in a directory
-    :return: updated_list:  list, list of sdbf files filtered
-    '''
+    #indexName => Ubuntu14.04   
     return [filename for filename in list_of_files if filename.split('.')[-1] == 'sdbf']
 
-#TODO check time efficiency
 '''
-#TODO: getting root(before /etc) from jeremy script and 
-get rid of what ever root before /etc when walking the dir and then save them into elasticsearch
-#UPDATE: dir+filename should be in sdhash coding, just use it
+Saves the all the hashes from dstdir into the Elasticsearch index provided
+:param dstdir:      string, directory where sdbf files are saved in previous step
+:param indexName:   string, index name in elasticsearch, e.g. ubuntu14.04(must be lower case)
+:return:
 '''
 def saveDir(dstdir , indexName):
-    '''
-    Saves the all the hashes from dstdir into the Elasticsearch index provided
-    :param dstdir:      string, directory where sdbf files are saved in previous step
-    :param indexName:   string, index name in elasticsearch, e.g. ubuntu14.04(must be lower case)
-    :return:
-    '''
+    #TODO check time efficiency
     i = 0
     #commandline 'cd dstdir'
     os.chdir(dstdir)    
@@ -58,30 +53,25 @@ def saveDir(dstdir , indexName):
             sdhashFile = open(filename , "r")
             #iterate over each line in the sdbf file
             for line in sdhashFile: 
+                print filename
                 #get file name from sdhash(with suffix if exist)
                 hashName = line.split(':')[3]
-                #split hashName, try to get suffix.  If no suffix
-                docType = hashName.split('/')[-1].split('.')
-                if len(docType) > 1:
-                    docType = docType[-1]
-                else:
-                    #since doc type is not that important
-                    docType = 'unknown'
+                #set all docType to default
+                docType = 'default'
                 #save item
                 put_in_Elastic(indexName, docType , hashName, line) 
 
+'''
+Saves a single hash into the elasticsearch index provided
+:param indexName:   string, index in elasticsearch e.g. ubuntu14.04(must be lower case)
+:param docType:     string, get from file suffix, if none, use unknown
+:param dirFileName: string, filepath + filename
+:param hashLine:    string, sdhash code for file
+:return:            no return currently
+#TODO check RESTAPI return code and modify return value according to res
+'''
 def put_in_Elastic(indexName , docType , dirFileName , hashLine):
-    '''
-    Saves a single hash into the elasticsearch index provided
-
-    :param indexName:   string, index in elasticsearch e.g. ubuntu14.04(must be lower case)
-    :param docType:     string, get from file suffix, if none, use unknown
-    :param dirFileName: string, filepath + filename
-    :param hashLine:    string, sdhash code for file
-    :return:            no return currently
-    #TODO check RESTAPI return code and modify return value according to res
-    '''
-    #print 'saving item:' + dirFileName
+    print 'saving item:' + dirFileName
     res = es.index(
         #ubuntu14.04
         index = indexName,
@@ -105,7 +95,29 @@ def getHashByFileName(indexName , fileName):
     except:
         "Can't find match"
         return
-    
+
+'''
+earch in elasticsearch using filename(full filename with dir), and compute similarity
+:param indexName:   string, reference index in elasticsearch e.g. ubuntu14.04(must be lower case)
+:param fileName:    string, should be filepath + filename that matches the reference
+:return:            no return currently
+'''
+def judgeFileByFileName(indexName , fileName):
+    #currently indexName should be ubuntu14.04
+    fileDict = getHashByFileName(indexName , fileName)
+    refSdhash = fileDict['_source']['sdhash']
+    #save into tempref.sdbf
+    #calc current file into tempobj.sdbf
+    #compare tempref and tempobj > tempRes
+    #read tempRes
+    '''
+    if score == 100:
+        pass
+    else:
+        #saveIntoJudgeIndex()
+        pass
+    '''
+    #clean up
 
 def deleteIndex(indexName):
     print "U sure you wanna delete index: " + indexName + "?(Y / N)"
@@ -123,7 +135,8 @@ if __name__ == '__main__':
         'ubuntu14.04' , 
         '/home/gladius/Documents/16Spring/CloudComputing/ContainerCodeClassification/scripts/testHash/021/000/021000030'
     )
-    deleteIndex('ubuntu14.04')
     '''
+    # deleteIndex('ubuntu14.04')
+    
     
 
