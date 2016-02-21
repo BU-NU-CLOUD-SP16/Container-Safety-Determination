@@ -12,15 +12,15 @@ from esCfg import EsCfg
 
 
 class EsDB():
-    def __init__(this):
-        this.dstdir = EsCfg['dstdir']
-        this.srcdir = EsCfg['srcdir']
-        this.host = EsCfg['host']
-        this.port = EsCfg['port']
-        this.nodeName = EsCfg['nodeName']
-        this.es = this.getEsConn(this.host , this.port)
+    def __init__(self):
+        self.dstdir = EsCfg['dstdir']
+        self.srcdir = EsCfg['srcdir']
+        self.host = EsCfg['host']
+        self.port = EsCfg['port']
+        self.nodeName = EsCfg['nodeName']
+        self.es = self.getEsConn(self.host , self.port)
 
-    def getEsConn(this, host , port):
+    def getEsConn(self, host , port):
         print 'connecting to ' + host + ':' + port
         return Elasticsearch([{'host': host, 'port': port}])
 
@@ -32,7 +32,7 @@ class EsDB():
     :param list_of_files:   list, list of files in a directory
     :return: updated_list:  list, list of sdbf files filtered
     '''
-    def get_SDBF_files(this , list_of_files):
+    def get_SDBF_files(self , list_of_files):
         #indexName => Ubuntu14.04   
         return [filename for filename in list_of_files if filename.split('.')[-1] == 'sdbf']
 
@@ -42,7 +42,7 @@ class EsDB():
     :param indexName:   string, index name in elasticsearch, e.g. ubuntu14.04(must be lower case)
     :return:
     '''
-    def saveDir(this , dstdir , indexName):
+    def saveDir(self , dstdir , indexName):
         #TODO check time efficiency
         #commandline 'cd dstdir'
         os.chdir(dstdir)    
@@ -55,7 +55,7 @@ class EsDB():
                 #get filepath
                 file_path = os.path.join(root, filename) 
                 # set file destination
-                file_dest = file_path.replace(this.srcdir, dstdir, 1)  
+                file_dest = file_path.replace(self.srcdir, dstdir, 1)  
                 sdhashFile = open(filename , "r")
                 #iterate over each line in the sdbf file
                 for line in sdhashFile: 
@@ -64,7 +64,7 @@ class EsDB():
                     #set all docType to default
                     docType = 'default'
                     #save item
-                    this.put_in_Elastic(indexName, docType , hashName, line) 
+                    self.put_in_Elastic(indexName, docType , hashName, line) 
 
     '''
     Saves a single hash into the elasticsearch index provided
@@ -75,9 +75,9 @@ class EsDB():
     :return:            no return currently
     #TODO check RESTAPI return code and modify return value according to res
     '''
-    def put_in_Elastic(this , indexName , docType , dirFileName , hashLine):
+    def put_in_Elastic(self , indexName , docType , dirFileName , hashLine):
         print 'saving item:' + dirFileName
-        res = this.es.index(
+        res = self.es.index(
             #ubuntu14.04
             index = indexName,
             #bin
@@ -91,10 +91,10 @@ class EsDB():
         print res
 
     #search a file in elasticsearch
-    def getHashByFileName(this , indexName , fileName):
+    def getHashByFileName(self , indexName , fileName):
         # Notice: fileName has to be full dir + filename format
         try:
-            resDict = this.es.get(index = indexName , id = fileName)
+            resDict = self.es.get(index = indexName , id = fileName)
             #result in dict
             return resDict
         except:
@@ -108,7 +108,7 @@ class EsDB():
     :param fileName:    string, should be filepath + filename that matches the reference
     :return:            no return currently
     '''
-    def judgeFileByFileName(this , indexName , fileName):
+    def judgeFileByFileName(self , indexName , fileName):
         #currently indexName should be ubuntu14.04
         fileDict = getHashByFileName(indexName , fileName)
         refSdhash = fileDict['_source']['sdhash']
@@ -120,7 +120,7 @@ class EsDB():
         temprefFile.write(refSdhash)
         temprefFile.close()
         #calc current file into tempobj.sdbf
-        #!!!!filename, where can I read this file
+        #!!!!filename, where can I read self file
         os.system('sdhash ./' + fileName + ' -o ./tempCompare/tempobj')
         #compare tempref and tempobj > tempRes
         os.system('sdhash -c ./tempCompare/tempref.sdbf ./tempCompare/tempobj.sdbf -t 0 > ./tempCompare/tempRes')
@@ -147,7 +147,7 @@ class EsDB():
     :param refIndexName:   string, index name in elasticsearch, e.g. ubuntu14.04(must be lower case)
     :return:
     '''
-    def judgeDir(this , dstdir , refIndexName):
+    def judgeDir(self , dstdir , refIndexName):
         #TODO check time efficiency
         #commandline 'cd dstdir'
         os.chdir(dstdir)    
@@ -162,12 +162,12 @@ class EsDB():
                 #iterate over each line in the sdbf file
                 judgeFileByFileName(indexName, file_path) 
 
-    def deleteIndex(this , indexName):
+    def deleteIndex(self , indexName):
         print "U sure you wanna delete index: " + indexName + "?(Y / N)"
         ans = raw_input()
         if ans == 'Y' or ans == 'y':
-            print 'deleting: ' + this.host + ':' + this.port + '/' + indexName
-            res = requests.delete(this.host + ':' + this.port + '/' + indexName)
+            print 'deleting: ' + self.host + ':' + self.port + '/' + indexName
+            res = requests.delete('http://' + self.host + ':' + self.port + '/' + indexName)
             print res
 
 if __name__ == '__main__':
