@@ -1,10 +1,10 @@
 EsCfg = {
 	#host ip
-    'host'   : '127.0.0.1',
+    'host'   : '0.0.0.0',
     #port 
     'port'   : '9200',
     #node name
-    'nodeName'   : 'ccc-node',
+    'nodeName'   : 'node-elasticsearch-1',
     #source file dir
     'srcdir' : './testHash/image',
     #dest file dir, save sdbf files

@@ -31,20 +31,20 @@ class EsDB:
     :return:
     '''
     def index_dir(self, path, indexName):
-        os.chdir(path)    
+        os.chdir(path)
         for root, subdirs, files in os.walk(os.getcwd()):
             os.chdir(root)
             #iterate over all the files in path
-            for filename in files: 
+            for filename in files:
                 #iterate over each line in the file
                 with open(filename, "r") as sdhashFile:
-                    for line in sdhashFile: 
+                    for line in sdhashFile:
                         #get file name from sdhash(with suffix if exist)
                         hashName = line.split(':')[3]
                         #set all docType to default
                         docType = 'default'
                         #save item
-                        self.put_in_Elastic(indexName, docType, hashName, line) 
+                        self.put_in_Elastic(indexName, docType, hashName, line)
 
 
     '''
@@ -110,7 +110,7 @@ class EsDB:
         if score == "100":
             print fileName + ' match 100%'
             pass
-        else:   
+        else:
             judgeIndex = 'judgeResult:' + indexName
             #TODO if use put_in_Elastic, here the body will be {'sdhash': resline}.  Better change the key
             put_in_Elastic(judgeIndex, 'judgeResult', fileName, resline)
@@ -127,14 +127,14 @@ class EsDB:
     def judge_dir(self, dstdir, refIndexName):
         #TODO check time efficiency
         #commandline 'cd dstdir'
-        os.chdir(dstdir)    
+        os.chdir(dstdir)
         for root, subdirs, files in os.walk(os.getcwd()):
             os.chdir(root)
-            for filename in files: 
+            for filename in files:
                 #get filepath
-                file_path = os.path.join(root, filename) 
+                file_path = os.path.join(root, filename)
                 #iterate over each line in the sdbf file
-                judgeFileByFileName(indexName, file_path) 
+                judgeFileByFileName(indexName, file_path)
 
     def delete_index(self, indexName):
         print "U sure you wanna delete index: " + indexName + "?(Y / N)"
@@ -153,11 +153,9 @@ if __name__ == '__main__':
     # res = testEsObj.index_dir(testEsObj.dstdir, 'ubuntu14.04')
     '''
     res = testEsObj.get_hash_by_fileName(
-        'ubuntu14.04', 
+        'ubuntu14.04',
         '/home/gladius/Documents/16Spring/CloudComputing/ContainerCodeClassification/scripts/testHash/021/000/021000030'
     )
     '''
     testEsObj.delete_index('ubuntu14.04')
-    
-    
 
