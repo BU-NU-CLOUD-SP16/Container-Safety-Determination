@@ -1,6 +1,6 @@
 EsCfg = {
 	#host ip
-    'host'   : 'http://localhost',
+    'host'   : '127.0.0.1',
     #port 
     'port'   : '9200',
     #node name
@@ -8,5 +8,5 @@ EsCfg = {
     #source file dir
     'srcdir' : './testHash/image',
     #dest file dir, save sdbf files
-    'dstdir' : './testHash/hashed_image'
+    'dstdir' : './testHash/hashed_image/'
 }
