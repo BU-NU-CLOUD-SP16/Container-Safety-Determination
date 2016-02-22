@@ -146,8 +146,7 @@ def calculate_sdhash(srcdir, dstdir):
         for filename in files:
             file_path = os.path.join(root, filename)
             file_dest = file_path.replace(srcdir, dstdir, 1)
-
-        gen_sdhash(file_path, file_dest, srcdir)
+            gen_sdhash(file_path, file_dest, srcdir)
 
 
 def gen_sdhash(file_path, file_dest, srcdir):
