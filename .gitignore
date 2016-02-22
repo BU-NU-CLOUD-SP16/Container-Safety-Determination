@@ -1,3 +1,6 @@
 *.pyc
 settings.ini
 .idea
+
+#skip these folders
+testHash
