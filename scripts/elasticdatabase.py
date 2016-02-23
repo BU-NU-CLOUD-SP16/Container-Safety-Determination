@@ -17,7 +17,9 @@ import json
 import string
 import requests
 import argparse
+import hashlib
 from esCfg import EsCfg
+import subprocess as sub
 
 from elasticsearch import Elasticsearch
 
@@ -70,11 +72,12 @@ class ElasticDatabase:
         """
         #TODO check REST API return code and return value according to res
         print 'indexing item: ' + dirFileName
+        id = hashlib.md5(dirFileName).hexdigest()
         res = self.es.index(
             index = indexName,
             doc_type = docType,
-            id = dirFileName,
-            body = {'sdhash':hashLine}
+            id = id,
+            body = {'file': dirFileName, 'sdhash': hashLine}
         )
         print res
 
@@ -82,7 +85,8 @@ class ElasticDatabase:
         """search a file in elasticsearch"""
         # Notice: file name has to be full dir + filename format
         try:
-            resDict = self.es.get(index = index, id = file)
+            id = hashlib.md5(file).hexdigest()
+            resDict = self.es.get(index = index, id = id)
             return resDict
         except:
             print "Can't find match"
@@ -100,20 +104,24 @@ class ElasticDatabase:
         #gonna use it when saving into judge index
         #currently indexName should be ubuntu14.04
         fileDict = self.search_file(indexName, fileName)
+        if fileDict == None:
+            print "skip file as its not present"
+            return
         refSdhash = fileDict['_source']['sdhash']
         with open("ref_hash", "w") as f:
             f.write(refSdhash)
         file1 = os.path.abspath("ref_hash")
         #TODO: error handling
-        resline = self.__exec_cmd(['sdhash', '-c', file1, file_path, '-t 0'])
+        resline = self.__exec_cmd(['sdhash', '-c', file1, file_path, '-t','0'])
+        resline = resline.strip()
         score = resline.split('|')[-1]
         if score == "100":
             print fileName + ' match 100%'
         else:
-            judgeIndex = 'judgeResult:' + indexName
+            judgeIndex = 'judgeresult:' + indexName
             # TODO if use index_file, here the body will
             # be {'sdhash': resline}.  Better change the key
-            index_file(judgeIndex, 'judgeResult', fileName, resline)
+            self.index_file(judgeIndex, 'judgeResult', fileName, resline)
         os.remove("ref_hash")
 
     def judge_dir(self, path, refIndexName):
@@ -149,7 +157,7 @@ class ElasticDatabase:
             else:
                 print 'index does not exist or already removed'
 
-    def __exec_cmd(cmd):
+    def __exec_cmd(self, cmd):
         p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
         output, errors = p.communicate()
         if len(errors.strip()) > 0:

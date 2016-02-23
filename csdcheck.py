@@ -25,7 +25,8 @@ import json
 import errno
 import subprocess as sub
 
-from scripts.esDB import saveDir
+from scripts.elasticdatabase import ElasticDatabase
+from scripts.esCfg import EsCfg
 
 TEMP_DIR = "/tmp/csdproject"
 
@@ -154,6 +155,8 @@ def calculate_sdhash(srcdir, dstdir):
 
         for filename in files:
             file_path = os.path.join(root, filename)
+            if os.stat(file_path).st_size < 1024:
+                continue
             file_dest = file_path.replace(srcdir, dstdir, 1)
             gen_sdhash(file_path, file_dest, srcdir)
 
@@ -187,7 +190,8 @@ def hash_and_index(imagename):
     # Since its for private registry images, imagename would be
     # of format registry-ip:registry-port/image-name:tag
     image = imagename.split("/")[1]
-    saveDir(dstdir, image)
+    elasticDB = ElasticDatabase(EsCfg)
+    elasticDB.index_dir(dstdir, image)
     #todo cleanup: remove tmp dir
 
 
