@@ -99,13 +99,13 @@ class ElasticDatabase:
         #TODO: pass the customer image name:tag as parameter, 
         #gonna use it when saving into judge index
         #currently indexName should be ubuntu14.04
-        fileDict = search_file(indexName, fileName)
+        fileDict = self.search_file(indexName, fileName)
         refSdhash = fileDict['_source']['sdhash']
         with open("ref_hash", "w") as f:
             f.write(refSdhash)
         file1 = os.path.abspath("ref_hash")
         #TODO: error handling
-        resline = self.__exec_cmd('sdhash', '-c', file1, file_path, '-t 0')
+        resline = self.__exec_cmd(['sdhash', '-c', file1, file_path, '-t 0'])
         score = resline.split('|')[-1]
         if score == "100":
             print fileName + ' match 100%'
@@ -137,7 +137,7 @@ class ElasticDatabase:
                 file_path = os.path.join(root, filename)
                 key = string.replace(file_path, path, "")
                 #iterate over each line in the sdbf file
-                check_similarity(indexName, key, file_path)
+                self.check_similarity(refIndexName, key, file_path)
 
     def delete_index(self, indexName):
         print "Confirm to delete index: " + indexName + "?(Y / N) "
