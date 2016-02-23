@@ -1,6 +1,6 @@
 EsCfg = {
 	#host ip
-    'host'   : '0.0.0.0',
+    'host'   : '10.10.10.15',
     #port 
     'port'   : '9200',
     #node name

@@ -12,8 +12,11 @@
 #####################################################################
 
 import os
+import sys
 import json
+import string
 import requests
+import argparse
 from esCfg import EsCfg
 
 from elasticsearch import Elasticsearch
@@ -40,20 +43,21 @@ class ElasticDatabase:
         :return:
         """
         os.chdir(path)
+        # if path contains '/' in the end or its root directory(/)
+        # TODO: what if path is like "/abc/xyz/////"??
+        if path[-1] == '/':
+            path = path[:-1]
         for root, subdirs, files in os.walk(os.getcwd()):
             os.chdir(root)
-            #iterate over all the files in path
             for filename in files:
-                #iterate over each line in the file
+                hashName = os.path.join(root, filename)
+                hashName = string.replace(hashName, path, "")
                 with open(filename, "r") as sdhashFile:
-                    for line in sdhashFile:
-                        #get file name from sdhash(with suffix if exist)
-                        #TODO: what if the filename consists of ':' ???
-                        hashName = line.split(':')[3]
-                        #set all docType to default
-                        docType = 'default'
-                        #save item
-                        self.index_file(index, docType, hashName, line)
+                    line = sdhashFile.read()
+                #set all docType to default
+                docType = 'default'
+                #save item
+                self.index_file(index, docType, hashName, line)
 
     def index_file(self, indexName, docType, dirFileName, hashLine):
         """
@@ -84,12 +88,12 @@ class ElasticDatabase:
             print "Can't find match"
             return
 
-    def check_similarity(self, indexName, fileName):
+    def check_similarity(self, indexName, fileName, file_path):
         """
-        search in elasticsearch using filename(full filename with dir),
-        and compute similarity
+        search in elasticsearch using filename and compute similarity
         :param indexName:  string, reference index in elasticsearch
-        :param fileName:   string, should be filepath + filename
+        :param fileName:   string, should be filename to search
+        :param file_path:  string: should be filepath + filename
         :return:           no return currently
         """
         #TODO: pass the customer image name:tag as parameter, 
@@ -97,36 +101,20 @@ class ElasticDatabase:
         #currently indexName should be ubuntu14.04
         fileDict = search_file(indexName, fileName)
         refSdhash = fileDict['_source']['sdhash']
-        os.system('rm -r ./tempCompare')
-        os.system('mkdir ./tempCompare')
-        os.system('touch ./tempCompare/tempref.sdbf')
-        #write searching result to reffile
-        temprefFile = open('./tempCompare/tempref.sdbf', 'r+b')
-        temprefFile.write(refSdhash)
-        temprefFile.close()
-        #calc current file into tempobj.sdbf
-        #!!!!filename, where can I read this file
-        os.system('sdhash ./' + fileName + ' -o ./tempCompare/tempobj')
-        #compare tempref and tempobj > tempRes
-        os.system('sdhash -c ./tempCompare/tempref.sdbf \
-                  ./tempCompare/tempobj.sdbf -t 0 > ./tempCompare/tempRes')
-        #read tempRes
-        resfile = open('./tempCompare/tempRes')
-        resline = resfile.next()
-        score = resfile.split('|')[-1]
-        #remove \n
-        score = score[:-1]
+        with open("ref_hash", "w") as f:
+            f.write(refSdhash)
+        file1 = os.path.abspath("ref_hash")
+        #TODO: error handling
+        resline = self.__exec_cmd('sdhash', '-c', file1, file_path, '-t 0')
+        score = resline.split('|')[-1]
         if score == "100":
             print fileName + ' match 100%'
-            pass
         else:
             judgeIndex = 'judgeResult:' + indexName
             # TODO if use index_file, here the body will
             # be {'sdhash': resline}.  Better change the key
             index_file(judgeIndex, 'judgeResult', fileName, resline)
-            pass
-        #clean up
-        os.system('rm -r ./tempCompare')
+        os.remove("ref_hash")
 
     def judge_dir(self, path, refIndexName):
         """
@@ -138,13 +126,18 @@ class ElasticDatabase:
         """
         #TODO check time efficiency
         os.chdir(path)
+        # if path contains '/' in the end or its root directory(/)
+        # TODO: what if path is like "/abc/xyz/////"??
+        if path[-1] == '/':
+            path = path[:-1]
         for root, subdirs, files in os.walk(os.getcwd()):
             os.chdir(root)
             for filename in files:
-                #get filepath
+                #get absolute filepath
                 file_path = os.path.join(root, filename)
+                key = string.replace(file_path, path, "")
                 #iterate over each line in the sdbf file
-                check_similarity(indexName, file_path)
+                check_similarity(indexName, key, file_path)
 
     def delete_index(self, indexName):
         print "Confirm to delete index: " + indexName + "?(Y / N) "
@@ -156,14 +149,43 @@ class ElasticDatabase:
             else:
                 print 'index does not exist or already removed'
 
+    def __exec_cmd(cmd):
+        p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
+        output, errors = p.communicate()
+        if len(errors.strip()) > 0:
+            print errors
+        return output
+        # todo handle errors
+
 
 if __name__ == '__main__':
+    """
+    description = "Database providing functionality to store " \
+            "sdhashes for files in elasticsearch, ability to " \
+            "compare with the stored hashes and predict results"
+    parser = argparse.ArgumentParser(description)
+    parser.add_argument('--index',
+                        action='store_true',
+                        default=False,
+                        help='index the contents to elasticsearch')
+
+    args = parser.parse_args()
+    """
+
     testEsObj = ElasticDatabase(EsCfg)
-    '''
-    res = testEsObj.index_dir(testEsObj.dstdir, 'ubuntu14.04')
-    res = testEsObj.search_file(
-        'ubuntu14.04',
-        '/home/gladius/Documents/16Spring/CloudComputing/ContainerCodeClassification/scripts/testHash/021/000/021000030'
-    )
-    testEsObj.delete_index('ubuntu14.04')
-    '''
+
+    if len(sys.argv) < 2:
+        print "Specify operation to perform: --index or --search"
+        exit(0)
+
+    command = sys.argv[1]
+    if command == "--index":
+        path = sys.argv[2]
+        index = sys.argv[3]
+        testEsObj.index_dir(path, index)
+    elif command == "--check":
+        path = sys.argv[2]
+        index = sys.argv[3]
+        testEsObj.judge_dir(path, index)
+    else:
+        print "Wrong syntax."
