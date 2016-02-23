@@ -23,6 +23,7 @@ import os
 import sys
 import json
 import errno
+import shutil
 import subprocess as sub
 
 from scripts.elasticdatabase import ElasticDatabase
@@ -71,8 +72,8 @@ def save_image(imagetar, imagename):
 def get_parent(json_file):
     with open(json_file) as data_file:
         data = json.load(data_file)
-        if 'parent' in data:
-            return data['parent']
+    if 'parent' in data:
+        return data['parent']
     return None
 
 
@@ -86,13 +87,16 @@ def flatten(dest_dir, base_path, layer):
     json_file = os.path.join(base_path, layer, 'json')
     with open(json_file) as data_file:
         data = json.load(data_file)
-        if 'parent' in data:
-            parent = data['parent']
-            flatten(dest_dir, base_path, parent) #recursive
+    if 'parent' in data:
+        parent = data['parent']
+        flatten(dest_dir, base_path, parent) #recursive
 
-        print('copying layer -- ', layer)
-        layer_path = os.path.join(base_path, layer)
+    print('copying layer -- ', layer)
+    layer_path = os.path.join(base_path, layer)
+    try:
         os.system('cp -r ' + layer_path + '/* ' + dest_dir)
+    except:
+        return
 
 
 # Determine leaf layer by checking the json file of each layer..
@@ -137,8 +141,6 @@ def make_dir(path):
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise  # raises error
-        elif e.errno == errno.EEXIST:
-            shutil.rmtree(path)
         else:
             pass
 
@@ -155,18 +157,23 @@ def calculate_sdhash(srcdir, dstdir):
 
         for filename in files:
             file_path = os.path.join(root, filename)
-            if os.stat(file_path).st_size < 1024:
+            try:
+                size = os.stat(file_path).st_size
+            except:
+                continue
+            if size < 1024:
                 continue
             file_dest = file_path.replace(srcdir, dstdir, 1)
             gen_sdhash(file_path, file_dest, srcdir)
 
 
 def gen_sdhash(file_path, file_dest, srcdir):
-    os.chdir(srcdir)
-    path = file_path.split(srcdir)
-    res = exec_cmd(['sdhash', path[1][1:]])
-    with open(file_dest, 'w') as f:
-        f.write(res)
+    #print file_path, file_dest, srcdir
+    #os.chdir(srcdir)
+    #path = file_path.split(srcdir)
+    res = exec_cmd(['sdhash', file_path])
+    with open(file_dest, "w") as f1:
+        f1.write(res)
 
 
 def hash_and_index(imagename):
@@ -175,6 +182,7 @@ def hash_and_index(imagename):
     flat_imgdir = os.path.join(TEMP_DIR, imagename, 'flat_image')
     dstdir = os.path.join(TEMP_DIR, imagename, 'hashed_image')
     #make_dir(TEMP_DIR)
+    exec_cmd(['sudo', 'rm', '-rf', TEMP_DIR])
     make_dir(imagedir)
     make_dir(flat_imgdir)
     make_dir(dstdir)
@@ -190,6 +198,7 @@ def hash_and_index(imagename):
     # Since its for private registry images, imagename would be
     # of format registry-ip:registry-port/image-name:tag
     image = imagename.split("/")[1]
+    print "Index data"
     elasticDB = ElasticDatabase(EsCfg)
     elasticDB.index_dir(dstdir, image)
     #todo cleanup: remove tmp dir
