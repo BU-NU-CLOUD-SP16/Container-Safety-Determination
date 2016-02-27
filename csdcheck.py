@@ -23,7 +23,7 @@ import os
 import sys
 import json
 import errno
-import shutil
+import string
 import subprocess as sub
 
 from scripts.elasticdatabase import ElasticDatabase
@@ -171,16 +171,21 @@ def gen_sdhash(file_path, file_dest, srcdir):
     #print file_path, file_dest, srcdir
     #os.chdir(srcdir)
     #path = file_path.split(srcdir)
+    if ":" in file_path:
+        tmp_path = file_path
+        file_path = string.replace(file_path, ":", "_")
+        exec_cmd(['mv', tmp_path, file_path])
     res = exec_cmd(['sdhash', file_path])
     with open(file_dest, "w") as f1:
         f1.write(res)
 
 
 def hash_and_index(imagename):
-    imagetar = os.path.join(TEMP_DIR, imagename, 'image.tar')
-    imagedir = os.path.join(TEMP_DIR, imagename, 'image')
-    flat_imgdir = os.path.join(TEMP_DIR, imagename, 'flat_image')
-    dstdir = os.path.join(TEMP_DIR, imagename, 'hashed_image')
+    tmpname = string.replace(imagename, ":", "_")
+    imagetar = os.path.join(TEMP_DIR, tmpname, 'image.tar')
+    imagedir = os.path.join(TEMP_DIR, tmpname, 'image')
+    flat_imgdir = os.path.join(TEMP_DIR, tmpname, 'flat_image')
+    dstdir = os.path.join(TEMP_DIR, tmpname, 'hashed_image')
     #make_dir(TEMP_DIR)
     exec_cmd(['sudo', 'rm', '-rf', TEMP_DIR])
     make_dir(imagedir)
@@ -200,7 +205,9 @@ def hash_and_index(imagename):
     image = imagename.split("/")[1]
     print "Index data"
     elasticDB = ElasticDatabase(EsCfg)
-    elasticDB.index_dir(dstdir, image)
+    #elasticDB.index_dir(dstdir, image)
+    #TODO: image = find_image_name(image)
+    elasticDB.judge_dir(dstdir, image)
     #todo cleanup: remove tmp dir
 
 

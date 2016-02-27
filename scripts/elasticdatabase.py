@@ -118,6 +118,11 @@ class ElasticDatabase:
         if score == "100":
             print fileName + ' match 100%'
         else:
+            # Copy suspecious files just for debugging purpose
+            test_path = file_path
+            test_path = string.replace(test_path, "hashed_image", "flat_image")
+            self.__exec_cmd(['cp', test_path, '/tmp/files'])
+
             judgeIndex = 'judgeresult:' + indexName
             # TODO if use index_file, here the body will
             # be {'sdhash': resline}.  Better change the key
