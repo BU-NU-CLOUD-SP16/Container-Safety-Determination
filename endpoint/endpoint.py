@@ -31,6 +31,8 @@ import os
 sys.path.append(os.getcwd() + "/../")
 from csdcheck import hash_and_index
 
+CUR_DIR=""
+
 app = Flask(__name__)
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -52,8 +54,10 @@ def registry_endpoint():
 @app.route("/test", methods=['POST'])
 def test():
     #log()
+    #change to CUR_DIR
+    os.chdir(CUR_DIR)
     data = json.loads(request.data)
-
+    print '>>>>>>>>>>>>>>>>>>>> ', os.getcwd()
     for event in data["events"]:
         # modifications to images are push events
         if event["action"] == "push":
@@ -101,4 +105,6 @@ def log():
 
 
 if __name__ == "__main__":
+    global CUR_DIR
+    CUR_DIR = os.getcwd()
     app.run("0.0.0.0", 9999)
