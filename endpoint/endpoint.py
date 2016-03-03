@@ -57,7 +57,7 @@ def test():
     #change to CUR_DIR
     os.chdir(CUR_DIR)
     data = json.loads(request.data)
-    print '>>>>>>>>>>>>>>>>>>>> ', os.getcwd()
+
     for event in data["events"]:
         # modifications to images are push events
         if event["action"] == "push":
