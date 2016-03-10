@@ -92,6 +92,27 @@ class ElasticDatabase:
             print "Can't find match"
             return
 
+    def getIndexName(self, imageName):
+        '''
+        :param imageName:
+        :return: id
+        '''
+        index = 'imageHashes'
+        searchIndex = self.search_file(index, imageName)
+        print searchIndex
+
+        if searchIndex != None:
+            return searchIndex['id']
+        else:
+            id = hashlib.md5(imageName).hexdigest()
+            res = self.es.index(
+                index = 'imageHashes',
+                doc_type = 'image file',
+                id = id,
+                body = {'image': imageName}
+            )
+            return id
+    
     def check_similarity(self, indexName, fileName, file_path):
         """
         search in elasticsearch using filename and compute similarity
