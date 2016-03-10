@@ -92,10 +92,11 @@ class ElasticDatabase:
             print "Can't find match"
             return
 
-    def check_similarity(self, indexName, fileName, file_path):
+    def check_similarity(self, indexName, image_name, fileName, file_path):
         """
         search in elasticsearch using filename and compute similarity
         :param indexName:  string, reference index in elasticsearch
+        :param image_name: string, image to which file belongs
         :param fileName:   string, should be filename to search
         :param file_path:  string: should be filepath + filename
         :return:           no return currently
@@ -123,17 +124,18 @@ class ElasticDatabase:
             test_path = string.replace(test_path, "hashed_image", "flat_image")
             self.__exec_cmd(['cp', test_path, '/tmp/files'])
 
-            judgeIndex = 'judgeresult:' + indexName
+            judgeIndex = 'judgeresult:' + image_name
             # TODO if use index_file, here the body will
             # be {'sdhash': resline}.  Better change the key
             self.index_file(judgeIndex, 'judgeResult', fileName, resline)
         os.remove("ref_hash")
 
-    def judge_dir(self, path, refIndexName):
+    def judge_dir(self, path, image_name, refIndexName):
         """
         checks similarity for all files in path provided
         filters the suspecious files
         :param path:         string, directory to be scanned
+        :param image_name:   string, name of image to be judged
         :param refIndexName: string, reference index in elasticsearch
         :return:
         """
@@ -150,7 +152,7 @@ class ElasticDatabase:
                 file_path = os.path.join(root, filename)
                 key = string.replace(file_path, path, "")
                 #iterate over each line in the sdbf file
-                self.check_similarity(refIndexName, key, file_path)
+                self.check_similarity(refIndexName, image_name, key, file_path)
 
     def delete_index(self, indexName):
         print "Confirm to delete index: " + indexName + "?(Y / N) "

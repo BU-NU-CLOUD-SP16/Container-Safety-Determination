@@ -93,7 +93,10 @@ def test():
                         print "New image uploaded is: %s | tag: %s" % (repository, tag)
                         host = temp[0].split("/")[2]
                         image = host + "/" + repository + ":" + tag
-                        hash_and_index(image)
+                        if tag == "golden":
+                            hash_and_index(image, "store")
+                        else:
+                            hash_and_index(image, "compare")
                         break
     return "Done", 200
 

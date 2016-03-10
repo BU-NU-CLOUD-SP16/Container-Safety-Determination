@@ -180,7 +180,21 @@ def gen_sdhash(file_path, file_dest, srcdir):
         f1.write(res)
 
 
-def hash_and_index(imagename):
+def get_base_image(imagename):
+    path = os.path.join(os.getcwd(), "../scripts")
+    mount_path = path + ":/tmp/scripts"
+    command = ["docker",
+               "run",
+               "-v",
+               mount_path,
+               imagename,
+               "bin/sh",
+               "/tmp/scripts/platform.sh"]
+    base_image = exec_cmd(command).lower()
+    return base_image
+
+
+def hash_and_index(imagename, operation):
     tmpname = string.replace(imagename, ":", "_")
     imagetar = os.path.join(TEMP_DIR, tmpname, 'image.tar')
     imagedir = os.path.join(TEMP_DIR, tmpname, 'image')
@@ -191,6 +205,7 @@ def hash_and_index(imagename):
     make_dir(imagedir)
     make_dir(flat_imgdir)
     make_dir(dstdir)
+    make_dir("/tmp/files") # for debugging purpose, will remove it
 
     #print imagename
     pull_image(imagename)
@@ -205,9 +220,12 @@ def hash_and_index(imagename):
     image = imagename.split("/")[1]
     print "Index data"
     elasticDB = ElasticDatabase(EsCfg)
-    #elasticDB.index_dir(dstdir, image)
-    #TODO: image = find_image_name(image)
-    elasticDB.judge_dir(dstdir, image)
+    base_image = get_base_image(imagename)
+    print base_image
+    if operation == "store":
+        elasticDB.index_dir(dstdir, base_image)
+    else:
+        elasticDB.judge_dir(dstdir, image, base_image)
     #todo cleanup: remove tmp dir
 
 
