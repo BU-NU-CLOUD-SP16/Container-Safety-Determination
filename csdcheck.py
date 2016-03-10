@@ -47,7 +47,7 @@ def untarlayers(imagedir):
         layerdir = os.path.join(imagedir, d)
         if os.path.isdir(layerdir):
             layertar = os.path.join(layerdir, 'layer.tar')
-            exec_cmd(['tar', '-xvf', layertar, '-C', layerdir])
+            exec_cmd(['sudo', 'tar', '-xvf', layertar, '-C', layerdir])
             os.remove(layertar)
 
 
@@ -94,7 +94,7 @@ def flatten(dest_dir, base_path, layer):
     print('copying layer -- ', layer)
     layer_path = os.path.join(base_path, layer)
     try:
-        os.system('cp -r ' + layer_path + '/* ' + dest_dir)
+        os.system('sudo cp -r ' + layer_path + '/* ' + dest_dir)
     except:
         return
 
@@ -174,7 +174,7 @@ def gen_sdhash(file_path, file_dest, srcdir):
     if ":" in file_path:
         tmp_path = file_path
         file_path = string.replace(file_path, ":", "_")
-        exec_cmd(['mv', tmp_path, file_path])
+        exec_cmd(['sudo', 'mv', tmp_path, file_path])
     res = exec_cmd(['sdhash', file_path])
     with open(file_dest, "w") as f1:
         f1.write(res)
