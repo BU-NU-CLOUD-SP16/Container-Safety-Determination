@@ -31,8 +31,11 @@ then
   echo "import platform" > temp.py
   echo "print(platform.dist()[0]+':'+platform.dist()[1])" >> temp.py
   python3 temp.py
-else
+elif [ -e /etc/os-release ]
+then
   #source <filename> sometimes don't work with /bin/sh. Hence using "."
   . /etc/os-release
   echo $ID:$VERSION_ID
+else
+  echo "Can't determine OS version"
 fi

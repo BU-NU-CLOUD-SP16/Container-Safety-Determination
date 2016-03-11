@@ -31,6 +31,9 @@ import os
 sys.path.append(os.getcwd() + "/../")
 from csdcheck import hash_and_index
 
+global CUR_DIR
+CUR_DIR=""
+
 app = Flask(__name__)
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -52,6 +55,8 @@ def registry_endpoint():
 @app.route("/test", methods=['POST'])
 def test():
     #log()
+    #change to CUR_DIR
+    os.chdir(CUR_DIR)
     data = json.loads(request.data)
 
     for event in data["events"]:
@@ -89,7 +94,10 @@ def test():
                         print "New image uploaded is: %s | tag: %s" % (repository, tag)
                         host = temp[0].split("/")[2]
                         image = host + "/" + repository + ":" + tag
-                        hash_and_index(image)
+                        if tag == "golden":
+                            hash_and_index(image, "store")
+                        else:
+                            hash_and_index(image, "compare")
                         break
     return "Done", 200
 
@@ -101,4 +109,5 @@ def log():
 
 
 if __name__ == "__main__":
+    CUR_DIR = os.getcwd()
     app.run("0.0.0.0", 9999)
