@@ -36,7 +36,7 @@ class ElasticDatabase:
         #TODO: How should we handle this in case of error???
         return Elasticsearch([{'host': host, 'port': port}])
 
-    def index_dir(self, path, index):
+    def index_dir(self, index_name, file_name, file_sdhash):
         """
         Saves hashes from given path into the Elasticsearch
         :param dstdir: string, directory containing sdbf files
@@ -44,22 +44,10 @@ class ElasticDatabase:
                        e.g. ubuntu14.04(must be lower case)
         :return:
         """
-        os.chdir(path)
-        # if path contains '/' in the end or its root directory(/)
-        # TODO: what if path is like "/abc/xyz/////"??
-        if path[-1] == '/':
-            path = path[:-1]
-        for root, subdirs, files in os.walk(os.getcwd()):
-            os.chdir(root)
-            for filename in files:
-                hashName = os.path.join(root, filename)
-                hashName = string.replace(hashName, path, "")
-                with open(filename, "r") as sdhashFile:
-                    line = sdhashFile.read()
-                #set all docType to default
-                docType = 'default'
-                #save item
-                self.index_file(index, docType, hashName, line)
+        # set all docType to default
+        docType = 'default'
+        # save item
+        self.index_file(index_name, docType, file_name, file_sdhash)
 
     def index_file(self, indexName, docType, dirFileName, hashLine):
         """
@@ -115,11 +103,10 @@ class ElasticDatabase:
             return id
 
 
-    def check_similarity(self, indexName, image_name, fileName, file_path):
+    def check_similarity(self, ref_index, image_name, fileName, file_sdhash):
         """
         search in elasticsearch using filename and compute similarity
         :param indexName:  string, reference index in elasticsearch
-        :param image_name: string, image to which file belongs
         :param fileName:   string, should be filename to search
         :param file_path:  string: should be filepath + filename
         :return:           no return currently
@@ -127,55 +114,47 @@ class ElasticDatabase:
         #TODO: pass the customer image name:tag as parameter, 
         #gonna use it when saving into judge index
         #currently indexName should be ubuntu14.04
-        fileDict = self.search_file(indexName, fileName)
+        fileDict = self.search_file(ref_index, fileName)
         if fileDict == None:
             print "skip file as its not present"
             return
-        refSdhash = fileDict['_source']['sdhash']
+        ref_sdhash = fileDict['_source']['sdhash']
+        with open("file_hash", "w") as f:
+            f.write(file_sdhash)
         with open("ref_hash", "w") as f:
-            f.write(refSdhash)
-        file1 = os.path.abspath("ref_hash")
+            f.write(ref_sdhash)
+        file1 = os.path.abspath('file_hash')
+        file2 = os.path.abspath('ref_hash')
         #TODO: error handling
-        resline = self.__exec_cmd(['sdhash', '-c', file1, file_path, '-t','0'])
+        resline = self.__exec_cmd(['sdhash', '-c', file1, file2, '-t','0'])
         resline = resline.strip()
         score = resline.split('|')[-1]
         if score == "100":
             print fileName + ' match 100%'
         else:
-            # Copy suspecious files just for debugging purpose
-            test_path = file_path
-            test_path = string.replace(test_path, "hashed_image", "flat_image")
-            self.__exec_cmd(['cp', test_path, '/tmp/files'])
+            # Copy suspicious files just for debugging purpose
+            # test_path = file_path
+            # test_path = string.replace(test_path, "hashed_image", "flat_image")
+            # self.__exec_cmd(['cp', test_path, '/tmp/files'])
 
             judgeIndex = 'judgeresult:' + image_name
             # TODO if use index_file, here the body will
             # be {'sdhash': resline}.  Better change the key
             self.index_file(judgeIndex, 'judgeResult', fileName, resline)
+        os.remove("file_hash")
         os.remove("ref_hash")
 
-    def judge_dir(self, path, image_name, refIndexName):
+
+    def judge_dir(self, refIndexName, image_name, file_name, file_sdhash):
         """
         checks similarity for all files in path provided
         filters the suspecious files
         :param path:         string, directory to be scanned
-        :param image_name:   string, name of image to be judged
         :param refIndexName: string, reference index in elasticsearch
         :return:
         """
         #TODO check time efficiency
-        os.chdir(path)
-        # if path contains '/' in the end or its root directory(/)
-        # TODO: what if path is like "/abc/xyz/////"??
-        if path[-1] == '/':
-            path = path[:-1]
-        for root, subdirs, files in os.walk(os.getcwd()):
-            os.chdir(root)
-            for filename in files:
-                #get absolute filepath
-                file_path = os.path.join(root, filename)
-                key = string.replace(file_path, path, "")
-                #iterate over each line in the sdbf file
-                self.check_similarity(refIndexName, image_name, key, file_path)
+        self.check_similarity(refIndexName, image_name, file_name, file_sdhash)
 
     def delete_index(self, indexName):
         print "Confirm to delete index: " + indexName + "?(Y / N) "
@@ -227,3 +206,4 @@ if __name__ == '__main__':
         testEsObj.judge_dir(path, index)
     else:
         print "Wrong syntax."
+

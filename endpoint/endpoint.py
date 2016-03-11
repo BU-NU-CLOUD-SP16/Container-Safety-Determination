@@ -31,6 +31,7 @@ import os
 sys.path.append(os.getcwd() + "/../")
 from csdcheck import hash_and_index
 
+global CUR_DIR
 CUR_DIR=""
 
 app = Flask(__name__)
@@ -108,6 +109,5 @@ def log():
 
 
 if __name__ == "__main__":
-    global CUR_DIR
     CUR_DIR = os.getcwd()
     app.run("0.0.0.0", 9999)
