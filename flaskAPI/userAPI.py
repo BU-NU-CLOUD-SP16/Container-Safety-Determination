@@ -19,16 +19,23 @@ def get_judge_res(judge_image_dir):
     del(es)
     return json_res
 
-#is filename should be in md5 or do i need to calculate md5 here?
-@app.route('/corrrect_false_warning/<judge_image_dir>/<file_name>')
-def correct_false_warning(judge_image_dir, file_name):
+@app.route('/correct_false_warning/<judge_image_dir>')
+def correct_false_warning(judge_image_dir):
     es = Elasticsearch('10.10.10.15:9200')
+    if 'file_name' in request.args:
+        md5_file_name = hashlib.md5(request.args['file_name']).hexdigest()
+        print md5_file_name + ' for ' + request.args['file_name']
+    else:
+        del(es)
+        return 'Error: no file name in request\n'
     judge_image_dir = 'judgeresult:' + judge_image_dir
     try:
-        res = es.delete(index = judge_image_dir, doc_type = 'judgeResult', id = file_name)
+        res = es.delete(index = judge_image_dir, doc_type = 'judgeResult', id = md5_file_name)
     except:
+        del(es)
         return 'Error: file do not exist\n'
-    return res['_shards']
+    del(es)
+    return json.dumps(res['_shards'])
 
 #which machine should run docker image? remotely or locally
 #and if word should be a list of arg?
