@@ -1,27 +1,45 @@
 from elasticsearch import Elasticsearch
 import json
+import hashlib
 from flask import * 
 app = Flask(__name__)
 
+esport = '10.10.10.15:9200'
+
 @app.route('/get_judge_res/<judge_image_dir>')
 def get_judge_res(judge_image_dir):
-    es = Elasticsearch('10.10.10.15:9200')
+    es = Elasticsearch(esport)
     judge_image_dir = 'judgeresult:' + judge_image_dir
+    search_size = 20
+    search_offset = 0
     try:
-        res_index = es.search(index = judge_image_dir)
+        if 'offset' in request.args:
+            search_offset = int(request.args.get('offset'))
+            print search_offset
+        res_index = es.search(
+            index = judge_image_dir, 
+            size = search_size, 
+            from_=search_offset
+        )
     except:
         del(es)
         return 'Error: index do not exist\n'
     res_lst = []
     for item in res_index['hits']['hits']:
         res_lst.append(item['_source']['file'])
-    json_res = json.dumps(res_lst)
+    res_dict = {
+        'length' : res_index['hits']['total'],
+        'file_list' : res_lst,
+        'from_' : search_offset,
+        'size' : len(res_index['hits']['hits'])
+    }
+    json_res = json.dumps(res_dict)
     del(es)
     return json_res
 
 @app.route('/correct_false_warning/<judge_image_dir>')
 def correct_false_warning(judge_image_dir):
-    es = Elasticsearch('10.10.10.15:9200')
+    es = Elasticsearch(esport)
     if 'file_name' in request.args:
         md5_file_name = hashlib.md5(request.args['file_name']).hexdigest()
         print md5_file_name + ' for ' + request.args['file_name']
@@ -39,8 +57,12 @@ def correct_false_warning(judge_image_dir):
 
 #which machine should run docker image? remotely or locally
 #and if word should be a list of arg?
-@app.route('/docker_run/<image_name>/<word>') 
-def docker_run(image_name, word):
+@app.route('/docker_run/<image_name>') 
+def docker_run(image_name):
+    es = Elasticsearch(esport)
+    #check es again
+    judge_image_dir = 'judgeresult:' + image_name
+    check_res = es.search(index = judge_image_dir)
     cmd = ['docker run', image_name, word]
     return os.system('docker run docker/whalesay cowsay ' + word)
 
