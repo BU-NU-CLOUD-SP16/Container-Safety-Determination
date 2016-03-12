@@ -12,6 +12,7 @@ def get_judge_res(judge_image_dir):
     judge_image_dir = 'judgeresult:' + judge_image_dir
     search_size = 20
     search_offset = 0
+    print request.args
     try:
         if 'offset' in request.args:
             search_offset = int(request.args.get('offset'))
@@ -28,7 +29,7 @@ def get_judge_res(judge_image_dir):
     for item in res_index['hits']['hits']:
         res_lst.append(item['_source']['file'])
     res_dict = {
-        'length' : res_index['hits']['total'],
+        'total' : res_index['hits']['total'],
         'file_list' : res_lst,
         'from_' : search_offset,
         'size' : len(res_index['hits']['hits'])
