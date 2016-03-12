@@ -82,9 +82,18 @@ class ElasticDatabase:
 
 
     def getIndexName(self, imageName):
-        '''
-        :param imageName:
-        :return: id
+        '''Computes and returns the index name for the image to be stored.
+
+        In order to control for index-name errors with ES (with problematic characters),
+        we're storing each image into the index of its hash.
+
+        e.g. 'Ubuntu14.04' to be stored in index named '52250eb3f1ccec5a687c4a4d14775e9d'
+        The function hashes the imageName and returns the hash.
+        For future retrieval of the name, the function stores the imagehash:imagename in
+        the index 'ImageHashes'
+
+        :param imageName: string - name of the image we're passing e.g. "ubuntu_14.04"
+        :return: id - string - name of the index to be stored in
         '''
         index = 'imageHashes'
         searchIndex = self.search_file(index, imageName)
@@ -102,7 +111,24 @@ class ElasticDatabase:
             )
             return id
 
+    def getImageName_fromHash(self, hash):
+        '''
+        Retrieves the original image name from a given hash. 
+        E.g. If you input '52250eb3f1ccec5a687c4a4d14775e9d' it returns 'ubuntu14.04'
+        
+        :param hash: string - the hash of the imagename to be retrieved
+        :return: imageName: string - the original name of the image
+        '''
+        index = 'ImageHashes'
 
+        try:
+            foundImage = self.es.get(index = index, id = hash)
+            imageName = foundImage['body']['image']
+            return imageName
+        except:
+            print "Can't find match"
+            return
+        
     def check_similarity(self, ref_index, image_name, fileName, file_sdhash):
         """
         search in elasticsearch using filename and compute similarity
@@ -119,6 +145,10 @@ class ElasticDatabase:
             print "skip file as its not present"
             return
         ref_sdhash = fileDict['_source']['sdhash']
+        features = refSdhash.split(":")[10:12]
+        if int(features[0]) < 2 and int(features[1]) < 16:
+            print "skipping since only one component with < 16 features"
+            return
         with open("file_hash", "w") as f:
             f.write(file_sdhash)
         with open("ref_hash", "w") as f:
