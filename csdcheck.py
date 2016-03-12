@@ -135,6 +135,9 @@ def get_leaf_and_flatten(imagedir,dest_dir):
 
     leaf = get_leaf(imagedir)
     flatten(dest_dir, imagedir, leaf)
+    dev_dir = os.path.join(dest_dir, "dev")
+    exec_cmd(['sudo', 'rm', '-rf', dev_dir])
+
 
 def make_dir(path):
     try:
@@ -185,6 +188,7 @@ def get_base_image(imagename):
                "bin/sh",
                "/tmp/scripts/platform.sh"]
     base_image = exec_cmd(command).lower()
+    base_image = base_image.strip()
     return base_image
 
 

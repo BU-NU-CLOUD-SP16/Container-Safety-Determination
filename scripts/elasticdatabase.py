@@ -145,6 +145,10 @@ class ElasticDatabase:
             print "skip file as its not present"
             return
         ref_sdhash = fileDict['_source']['sdhash']
+        features = refSdhash.split(":")[10:12]
+        if int(features[0]) < 2 and int(features[1]) < 16:
+            print "skipping since only one component with < 16 features"
+            return
         with open("file_hash", "w") as f:
             f.write(file_sdhash)
         with open("ref_hash", "w") as f:
