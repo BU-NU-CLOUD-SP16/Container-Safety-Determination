@@ -1,5 +1,6 @@
 from elasticsearch import Elasticsearch
 import json
+import os
 import hashlib
 from flask import * 
 app = Flask(__name__)
@@ -16,7 +17,8 @@ def get_judge_res(judge_image_dir):
     try:
         if 'offset' in request.args:
             search_offset = int(request.args.get('offset'))
-            print search_offset
+        if 'size' in request.args:
+            search_size = int(request.args.get('size'))
         res_index = es.search(
             index = judge_image_dir, 
             size = search_size, 
@@ -58,14 +60,21 @@ def correct_false_warning(judge_image_dir):
 
 #which machine should run docker image? remotely or locally
 #and if word should be a list of arg?
-@app.route('/docker_run/<image_name>') 
-def docker_run(image_name):
+@app.route('/docker_run/') 
+def docker_run():
     es = Elasticsearch(esport)
     #check es again
-    judge_image_dir = 'judgeresult:' + image_name
-    check_res = es.search(index = judge_image_dir)
-    cmd = ['docker run', image_name, word]
-    return os.system('docker run docker/whalesay cowsay ' + word)
+
+    #check finished, run docker image
+    try:
+        image_name = request.args.get('image_name')
+    except:
+        return 'can not get image_name in request\n'
+    arg_lst = request.args.getlist('args')
+    cmd = ['docker run', image_name] + arg_lst
+    cmd = ' '.join(cmd)
+    os.system(cmd)
+    return 'done\n'
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')
