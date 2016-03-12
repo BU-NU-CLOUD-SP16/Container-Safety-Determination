@@ -155,17 +155,21 @@ def process_sdhash(imagename, base_image, srcdir, msg_queue, operation):
     for root, subdirs, files in os.walk(srcdir):
         for filename in files:
             file_path = os.path.join(root, filename)
-            try:
-                size = os.stat(file_path).st_size
-            except:
-                continue
-            if size < 1024:
-                continue
-            relative_path = file_path.replace(srcdir, '', 1)
-            sdhash = gen_sdhash(srcdir, file_path, relative_path)
-            image = imagename.split("/")[1]
-            msg_queue.send(image + "#" + base_image + '#' + relative_path + '#' + operation + "#" + sdhash)
-
+            file_type = exec_cmd(['file',file_path])
+            
+            # only process binary, library files and scripts
+            if 'ELF' in file_type or 'executable' in file_type:
+                try:
+                    size = os.stat(file_path).st_size
+                except:
+                    continue
+                if size < 1024:
+                    continue
+                relative_path = file_path.replace(srcdir, '', 1)
+                sdhash = gen_sdhash(srcdir, file_path, relative_path)
+                image = imagename.split("/")[1]
+                relative_path = string.replace(relative_path, ':', '_')
+                msg_queue.send(image + "#" + base_image + '#' + relative_path + '#' + operation + "#" + sdhash)
 
 def gen_sdhash(srcdir, file_path, relative_path):
     full_path = os.path.join(srcdir, relative_path)
@@ -174,7 +178,7 @@ def gen_sdhash(srcdir, file_path, relative_path):
         tmp_path = os.path.join(srcdir, relative_path)
         exec_cmd(['sudo', 'mv', full_path, tmp_path])
     os.chdir(srcdir)
-    return exec_cmd(['sdhash', relative_path])
+    return exec_cmd(['sdhash', relative_path[1:]])
 
 
 def get_base_image(imagename):
