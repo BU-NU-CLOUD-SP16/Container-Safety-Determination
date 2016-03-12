@@ -77,7 +77,7 @@ class ElasticDatabase:
             resDict = self.es.get(index = index, id = id)
             return resDict
         except:
-            print "Can't find match"
+            print "Can't find file match"
             return
 
 
@@ -126,7 +126,7 @@ class ElasticDatabase:
             imageName = foundImage['body']['image']
             return imageName
         except:
-            print "Can't find match"
+            print "Can't find image match"
             return
         
     def check_similarity(self, ref_index, image_name, fileName, file_sdhash):
@@ -145,7 +145,7 @@ class ElasticDatabase:
             print "skip file as its not present"
             return
         ref_sdhash = fileDict['_source']['sdhash']
-        features = refSdhash.split(":")[10:12]
+        features = file_sdhash.split(":")[10:12]
         if int(features[0]) < 2 and int(features[1]) < 16:
             print "skipping since only one component with < 16 features"
             return

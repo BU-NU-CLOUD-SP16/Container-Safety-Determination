@@ -1,5 +1,5 @@
 EsCfg = {
-	#host ip
+    #host ip
     'host'   : '10.10.10.15',
     #port 
     'port'   : '9200',
