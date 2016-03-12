@@ -13,6 +13,7 @@
 #####################################################################
 
 import pika
+import json
 import time # remove
 
 class MessageQueue:
@@ -35,14 +36,15 @@ class MessageQueue:
 
     # declare a callback to process received message
     def callback(self, ch, method, properties, body):
-        #print body
+        data = json.loads(body)
+        #print data
         #time.sleep(1)
-        parts = body.split('#')
-        image = parts[0]
-        base_image = parts[1]
-        file_path = parts[2]
-        operation = parts[3]
-        sdhash = parts[4]
+        image = data['image']
+        base_image = data['base_image']
+        file_path = data['relative_path']
+        operation = data['operation']
+        sdhash = data['sdhash']
+
         if operation == "store":
             self.es.index_dir(base_image, file_path, sdhash)
         else:

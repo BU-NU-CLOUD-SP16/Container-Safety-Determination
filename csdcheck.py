@@ -38,7 +38,7 @@ def exec_cmd(cmd):
     p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE)
     output, errors = p.communicate()
     if len(errors.strip()) > 0:
-        print errors
+        print cmd, ' >>> ', errors
     return output
     # todo handle errors
 
@@ -165,11 +165,20 @@ def process_sdhash(imagename, base_image, srcdir, msg_queue, operation):
                     continue
                 if size < 1024:
                     continue
-                relative_path = file_path.replace(srcdir, '', 1)
+                relative_path = file_path.replace(srcdir, '', 1)[1:] # 1: to remove '/'
                 sdhash = gen_sdhash(srcdir, file_path, relative_path)
                 image = imagename.split("/")[1]
                 relative_path = string.replace(relative_path, ':', '_')
-                msg_queue.send(image + "#" + base_image + '#' + relative_path + '#' + operation + "#" + sdhash)
+
+                message = {}
+                message['image'] = image
+                message['base_image'] = base_image
+                message['relative_path'] = relative_path
+                message['operation'] = operation
+                message['sdhash'] = sdhash
+
+                msg_queue.send(json.dumps(message))
+
 
 def gen_sdhash(srcdir, file_path, relative_path):
     full_path = os.path.join(srcdir, relative_path)
@@ -178,7 +187,7 @@ def gen_sdhash(srcdir, file_path, relative_path):
         tmp_path = os.path.join(srcdir, relative_path)
         exec_cmd(['sudo', 'mv', full_path, tmp_path])
     os.chdir(srcdir)
-    return exec_cmd(['sdhash', relative_path[1:]])
+    return exec_cmd(['sdhash', relative_path])
 
 
 def get_base_image(imagename):
