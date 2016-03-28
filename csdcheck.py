@@ -237,11 +237,12 @@ def hash_and_index(imagename, operation):
 
 
 # ------------------------------------------------------------------------
-# Methods for testing container changes
+# Methods for checking container changes
 # ------------------------------------------------------------------------
 
-# 'docker diff' output contains both files and directories
-# parse output to get files only
+# 'docker diff' output contains both files and directories.
+# parse output to get files only.
+# param files: list of file paths
 def get_files_only(files):
     files_only = []
     for f in files:
@@ -259,13 +260,24 @@ def get_files_only(files):
     return files_only
 
 
-# 'docker cp containerID:/path/to/file  /path/to/local/destination'
+# Copy files from container to local host
+# command format: 'docker cp containerID:/path/to/file  /path/to/local/destination'
 def copy_from_container(src, dest):
     exec_cmd(['docker', 'cp', src, dest])
 
 
-# Returns changed files
 def check_container(container_id, elasticDB, ref_index):
+    """
+    Check a running container for files that have been changed. If a file
+    been changed, determine if it's suspicious by checking if the reference
+    dataset contains a file with the same path. If so compare the hash of 
+    the file with the reference hash. 
+    param container_id: short or full container id
+    param elasticDB: instance of ElasticDatabase connected to elasticsearch
+               DB containing reference dataset
+    param ref_index: index name of reference data set in elasticsearch
+    return: Dictionary of suspicious files
+    """
     changed_files = {} # filename => similarity score 
     res = exec_cmd(['docker', 'diff', container_id])
     files = res.splitlines()
@@ -326,8 +338,8 @@ if __name__ == "__main__":
     ##hash_and_index(imagename)
 
     # TEST CONTAINER
-    container = sys.argv[1]
+    container_id = sys.argv[1]
     elasticDB = ElasticDatabase(EsCfg)
-    differences = check_container(container, elasticDB, 'ubuntu:14.04')
+    differences = check_container(container_id, elasticDB, 'ubuntu:14.04')
     print differences
     print 'DONE'
