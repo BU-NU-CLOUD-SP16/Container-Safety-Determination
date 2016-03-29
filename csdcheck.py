@@ -319,7 +319,7 @@ def check_container(container_id, elasticDB, ref_index):
             resline = exec_cmd(['sdhash', '-c', file1, file2, '-t','0'])
             resline = resline.strip()
             score = resline.split('|')[-1]
-
+            
             if score == "100":
                 print fileName + ' match 100%'
             else:
@@ -327,7 +327,8 @@ def check_container(container_id, elasticDB, ref_index):
 
             os.remove("file_hash")
             os.remove("ref_hash")
-            return changed_files
+
+    return changed_files
 
 
 if __name__ == "__main__":
@@ -341,5 +342,9 @@ if __name__ == "__main__":
     container_id = sys.argv[1]
     elasticDB = ElasticDatabase(EsCfg)
     differences = check_container(container_id, elasticDB, 'ubuntu:14.04')
-    print differences
+    
+    print "SUSPICIOUS FILES"
+    space = 36 
+    for key in differences:
+        print key, ' '*(space-len(key)) , differences[key]
     print 'DONE'

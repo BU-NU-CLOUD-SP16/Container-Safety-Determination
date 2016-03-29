@@ -77,7 +77,7 @@ class ElasticDatabase:
             resDict = self.es.get(index = index, id = id)
             return resDict
         except:
-            print "Can't find file match"
+            #print "Can't find file match"
             return
 
 
