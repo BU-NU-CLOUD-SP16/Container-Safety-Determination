@@ -37,7 +37,7 @@ class ElasticDatabase:
         #TODO: How should we handle this in case of error???
         return Elasticsearch([{'host': host, 'port': port}])
 
-    def index_dir(self, index_name, file_name, file_sdhash):
+    def index_dir(self, index_name, file_name, file_sdhash, flag):  #this function doesn't actually do what it says??
         """
         Saves hashes from given path into the Elasticsearch
         :param dstdir: string, directory containing sdbf files
@@ -48,11 +48,13 @@ class ElasticDatabase:
         # set all docType to default
         docType = 'default'
         # save item
-        self.index_file(index_name, docType, file_name, file_sdhash)
+        self.index_file(index_name, docType, file_name, file_sdhash, flag)
 
-    def index_file(self, indexName, docType, dirFileName, hashLine):
+    def index_file(self, index_name, docType, dir_file_name, hashLine, flag):
         """
-        Saves a single hash into the elasticsearch index provided
+        Saves a single file into the elasticsearch index provided.
+        The function hashes the file directory path and stores the hash in ES along its safe/unsafe status as a flag attribute
+        
         :param indexName:   string, index in elasticsearch e.g. ubuntu14.04
         :param docType:     string, get from file suffix
         :param dirFileName: string, filepath + filename
@@ -60,30 +62,49 @@ class ElasticDatabase:
         :return:            no return currently
         """
         #TODO check REST API return code and return value according to res
-        print 'indexing item: ' + dirFileName
-        id = hashlib.md5(dirFileName).hexdigest()
+        print 'indexing item: ' + dir_file_name
+        id = hashlib.md5(dir_file_name).hexdigest()
+        basename = dir_file_name.split('/')[-1]
         res = self.es.index(
-            index = indexName,
+            index = index_name,
             doc_type = docType,
             id = id,
-            body = {'file': dirFileName, 'sdhash': hashLine}
+            body = {'file': dir_file_name, 'sdhash': hashLine, 'basename':basename, 'flag': flag}
         )
         print res
 
-    def search_file(self, index, file):
-        """search a file in elasticsearch"""
+    def search_file(self, index_name, dir_file_name):
+        """
+        Searches a file in Elasticsearch. Returns if object if found - None otherwise
+        """
         # Notice: file name has to be full dir + filename format
+        print 'searching for dir path...'
         try:
-            id = hashlib.md5(file).hexdigest()
-            resDict = self.es.get(index = index, id = id)
+            id = hashlib.md5(dir_file_name).hexdigest()
+            resDict = self.es.get(index = index_name, id = id)
             return resDict
         except:
-            #print "Can't find file match"
+            print "Can't find file match"
             return
 
-
-    def getIndexName(self, imageName):
-        '''Computes and returns the index name for the image to be stored.
+    def search_forBasename(self, index_name, dir_file_name):
+        """
+        Searches for a file's basename in the database. 
+        param: indexName, file
+        """
+        print 'searching for basename...'
+        base = dir_file_name.split('/')[-1] # choose the basename out of the directory path
+        try:
+            resDict = self.es.search(index = index_name, body={"query": {"match": {'basename':base}}})
+            print 'Object Found: ', resDict
+            return resDict
+        except:
+            print "Can't find basename match"
+            return
+        
+    def getIndexName(self, image_name):
+        """
+        Computes and returns the index name for the image to be stored.
 
         In order to control for index-name errors with ES (with problematic characters),
         we're storing each image into the index of its hash.
@@ -93,21 +114,21 @@ class ElasticDatabase:
         For future retrieval of the name, the function stores the imagehash:imagename in
         the index 'ImageHashes'
 
-        :param imageName: string - name of the image we're passing e.g. "ubuntu_14.04"
+        :param image_name: string - name of the image we're passing e.g. "ubuntu_14.04"
         :return: id - string - name of the index to be stored in
-        '''
+        """
         index = 'imagehashes'
-        searchIndex = self.search_file(index, imageName)
+        searchIndex = self.search_file(index, image_name)
         
         if searchIndex != None:
             return searchIndex['_id']
         else:
-            id = hashlib.md5(imageName).hexdigest()
+            id = hashlib.md5(image_name).hexdigest()
             res = self.es.index(
                 index = 'imagehashes',
                 doc_type = 'image file',
                 id = id,
-                body = {'image': imageName}
+                body = {'image': image_name}
             )
             return id
 
@@ -220,6 +241,10 @@ if __name__ == '__main__':
     """
     
     testEsObj = ElasticDatabase(EsCfg)
+    testEsObj.index_file('test1', 'default', '/tests/test1/bin/ls', 'thisisahashNOT', 'safe')
+    testEsObj.search_forBasename('test1', '/folder/potato/test2/ls')
+
+'''
     indexName = testEsObj.getIndexName('Ubuntu14.04')
     print indexName
     time.sleep(2)
@@ -228,8 +253,7 @@ if __name__ == '__main__':
     time.sleep(2)
     returnName = testEsObj.getImageName_fromHash('671ee2cf627ddf060f93d3539a7d2c82')
     print 'the name is: ', returnName
-
-'''    
+    
     if len(sys.argv) < 2:
         print "Specify operation to perform: --index or --search"
         exit(0)
