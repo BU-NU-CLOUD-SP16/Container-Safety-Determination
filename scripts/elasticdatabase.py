@@ -20,6 +20,7 @@ import argparse
 import hashlib
 from esCfg import EsCfg
 import subprocess as sub
+import time
 
 from elasticsearch import Elasticsearch
 
@@ -77,7 +78,7 @@ class ElasticDatabase:
             resDict = self.es.get(index = index, id = id)
             return resDict
         except:
-            print "Can't find file match"
+            #print "Can't find file match"
             return
 
 
@@ -95,16 +96,15 @@ class ElasticDatabase:
         :param imageName: string - name of the image we're passing e.g. "ubuntu_14.04"
         :return: id - string - name of the index to be stored in
         '''
-        index = 'imageHashes'
+        index = 'imagehashes'
         searchIndex = self.search_file(index, imageName)
-        print searchIndex
-
+        
         if searchIndex != None:
-            return searchIndex['id']
+            return searchIndex['_id']
         else:
             id = hashlib.md5(imageName).hexdigest()
             res = self.es.index(
-                index = 'imageHashes',
+                index = 'imagehashes',
                 doc_type = 'image file',
                 id = id,
                 body = {'image': imageName}
@@ -119,11 +119,11 @@ class ElasticDatabase:
         :param hash: string - the hash of the imagename to be retrieved
         :return: imageName: string - the original name of the image
         '''
-        index = 'ImageHashes'
+        index = 'imagehashes'
 
         try:
             foundImage = self.es.get(index = index, id = hash)
-            imageName = foundImage['body']['image']
+            imageName = foundImage['_source']['image']
             return imageName
         except:
             print "Can't find image match"
@@ -218,9 +218,18 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     """
-
+    
     testEsObj = ElasticDatabase(EsCfg)
+    indexName = testEsObj.getIndexName('Ubuntu14.04')
+    print indexName
+    time.sleep(2)
+    indexName2 = testEsObj.getIndexName('Ubuntu14.04')
+    print indexName2
+    time.sleep(2)
+    returnName = testEsObj.getImageName_fromHash('671ee2cf627ddf060f93d3539a7d2c82')
+    print 'the name is: ', returnName
 
+'''    
     if len(sys.argv) < 2:
         print "Specify operation to perform: --index or --search"
         exit(0)
@@ -237,3 +246,4 @@ if __name__ == '__main__':
     else:
         print "Wrong syntax."
 
+'''

@@ -39,6 +39,7 @@ def exec_cmd(cmd):
     output, errors = p.communicate()
     if len(errors.strip()) > 0:
         print cmd, ' >>> ', errors
+        return None
     return output
     # todo handle errors
 
@@ -167,6 +168,9 @@ def process_sdhash(imagename, base_image, srcdir, msg_queue, operation):
                     continue
                 relative_path = file_path.replace(srcdir, '', 1)[1:] # 1: to remove '/'
                 sdhash = gen_sdhash(srcdir, file_path, relative_path)
+
+                # Since its for private registry images, imagename would be
+                # of format registry-ip:registry-port/image-name:tag
                 image = imagename.split("/")[1]
                 relative_path = string.replace(relative_path, ':', '_')
 
@@ -218,7 +222,6 @@ def hash_and_index(imagename, operation):
     make_dir(dstdir)
     make_dir("/tmp/files") # for debugging purpose, will remove it
 
-    #print imagename
     pull_image(imagename)
     save_image(imagetar, imagename)
     untar_image(imagetar, imagedir)
@@ -232,19 +235,116 @@ def hash_and_index(imagename, operation):
     msg_queue = MessageQueue('localhost', 'dockerqueue', elasticDB)
     process_sdhash(imagename, base_image, flat_imgdir, msg_queue, operation)
 
-    # Since its for private registry images, imagename would be
-    # of format registry-ip:registry-port/image-name:tag
-    #image = imagename.split("/")[1]
-    #print "Index data"
-    #elasticDB.index_dir(dstdir, image)
-    #TODO: image = find_image_name(image)
-    ## elasticDB.judge_dir(dstdir, image)
-    #todo cleanup: remove tmp dir
+
+# ------------------------------------------------------------------------
+# Methods for checking container changes
+# ------------------------------------------------------------------------
+
+# 'docker diff' output contains both files and directories.
+# parse output to get files only.
+# param files: list of file paths
+def get_files_only(files):
+    files_only = []
+    for f in files:
+        index = -1 # index to be replaced        
+        for idx, filename in enumerate(files_only):
+            if (filename[3:] + '/') in f:
+                index = idx
+                break
+
+        if index > -1:
+            files_only[index] = f
+        else:
+            files_only.append(f)
+
+    return files_only
+
+
+# Copy files from container to local host
+# command format: 'docker cp containerID:/path/to/file  /path/to/local/destination'
+def copy_from_container(src, dest):
+    exec_cmd(['docker', 'cp', src, dest])
+
+
+def check_container(container_id, elasticDB, ref_index):
+    """
+    Check a running container for files that have been changed. If a file
+    been changed, determine if it's suspicious by checking if the reference
+    dataset contains a file with the same path. If so compare the hash of 
+    the file with the reference hash. 
+    param container_id: short or full container id
+    param elasticDB: instance of ElasticDatabase connected to elasticsearch
+               DB containing reference dataset
+    param ref_index: index name of reference data set in elasticsearch
+    return: Dictionary of suspicious files
+    """
+    changed_files = {} # filename => similarity score 
+    res = exec_cmd(['docker', 'diff', container_id])
+    files = res.splitlines()
+    files_only = get_files_only(files)
+
+    temp_dir = 'tmpdata'
+    if not os.path.exists(temp_dir):
+        os.mkdir(temp_dir)
+
+    for s in files_only:
+        filename = s[3:] # filename starts at 3
+        # check if ref DB contains this file path
+        result = elasticDB.search_file(ref_index, filename)
+
+        if result is None:
+            changed_files[filename] = -1
+        else:
+            # found a file with same path
+            # compare ref hash with file hash
+            ref_sdhash = result['_source']['sdhash']
+            features = ref_sdhash.split(":")[10:12]
+            if int(features[0]) < 2 and int(features[1]) < 16:
+                changed_files[filename] = -2
+                continue
+
+            copy_from_container(container_id + ':' + filename, temp_dir)
+            basename = os.path.basename(filename)
+            file_sdhash = exec_cmd(['sdhash', os.path.join(temp_dir, basename) ])
+
+            with open("file_hash", "w") as f:
+                f.write(file_sdhash)
+            with open("ref_hash", "w") as f:
+                f.write(ref_sdhash)
+
+            file1 = os.path.abspath('file_hash')
+            file2 = os.path.abspath('ref_hash')
+
+            # compare file hash with reference hash
+            resline = exec_cmd(['sdhash', '-c', file1, file2, '-t','0'])
+            resline = resline.strip()
+            score = resline.split('|')[-1]
+            
+            if score == "100":
+                print fileName + ' match 100%'
+            else:
+                changed_files[filename] = score
+
+            os.remove("file_hash")
+            os.remove("ref_hash")
+
+    return changed_files
 
 
 if __name__ == "__main__":
+    # TEST IMAGE
     # imagename should be in the form image:tag
     # Example test: python csdcheck.py python:2.7.8-slim
-    imagename = sys.argv[1]
+    ##imagename = sys.argv[1]
+    ##hash_and_index(imagename)
 
-    hash_and_index(imagename)
+    # TEST CONTAINER
+    container_id = sys.argv[1]
+    elasticDB = ElasticDatabase(EsCfg)
+    differences = check_container(container_id, elasticDB, 'ubuntu:14.04')
+    
+    print "SUSPICIOUS FILES"
+    space = 36 
+    for key in differences:
+        print key, ' '*(space-len(key)) , differences[key]
+    print 'DONE'
