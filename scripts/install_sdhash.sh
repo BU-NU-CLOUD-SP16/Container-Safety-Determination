@@ -1,7 +1,11 @@
 #!/bin/bash
+# This script is used while creating the image using dockerfile.
+# To run the components individually, make sure you run this as
+# root user or add sudo in front of important commands.
+
 
 #prereqs
-sudo apt-get -y install git libssl-dev autoconf automake libtool curl
+apt-get -y install git libssl-dev autoconf automake libtool curl
 
 #google protocol buffers
 wget https://github.com/google/protobuf/releases/download/v2.5.0/protobuf-2.5.0.tar.gz
@@ -13,8 +17,8 @@ cd protobuf-2.5.0
 make -j2
 #make check
 #read -p "If the above check shows failure, you *may* need to solve it --> Press ^C (Ctrl + C) to exit; press [Enter] to continue."
-sudo make install
-sudo ldconfig
+make install
+ldconfig
 cd ..
 rm -rf protobuf
 
@@ -22,6 +26,6 @@ rm -rf protobuf
 git clone https://github.com/sdhash/sdhash.git
 cd sdhash
 make
-sudo make install
+make install
 cd ..
-sudo rm -rf sdhash
+rm -rf sdhash
