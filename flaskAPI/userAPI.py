@@ -3,7 +3,10 @@ import json
 import os
 import hashlib
 from flask import * 
+from flask.ext.cors import cors
+
 app = Flask(__name__)
+CORS(app)
 
 esport = '10.10.10.15:9200'
 

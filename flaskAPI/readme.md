@@ -1,3 +1,7 @@
+## Prereq
+
+$ pip install -U flask-cors
+
 ## Get suspicious files
 
 http://host:port/get_judge_res/image_name?size=size&offset=offset
