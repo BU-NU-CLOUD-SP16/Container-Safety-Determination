@@ -157,7 +157,7 @@ def process_sdhash(imagename, base_image, srcdir, msg_queue, operation):
         for filename in files:
             file_path = os.path.join(root, filename)
             file_type = exec_cmd(['file',file_path])
-            
+
             # only process binary, library files and scripts
             if 'ELF' in file_type or 'executable' in file_type:
                 try:
@@ -270,8 +270,8 @@ def check_container(container_id, elasticDB, ref_index):
     """
     Check a running container for files that have been changed. If a file
     been changed, determine if it's suspicious by checking if the reference
-    dataset contains a file with the same path. If so compare the hash of 
-    the file with the reference hash. 
+    dataset contains a file with the same path. If so compare the hash of
+    the file with the reference hash.
     param container_id: short or full container id
     param elasticDB: instance of ElasticDatabase connected to elasticsearch
                DB containing reference dataset
@@ -319,7 +319,7 @@ def check_container(container_id, elasticDB, ref_index):
             resline = exec_cmd(['sdhash', '-c', file1, file2, '-t','0'])
             resline = resline.strip()
             score = resline.split('|')[-1]
-            
+
             if score == "100":
                 print fileName + ' match 100%'
             else:
@@ -342,9 +342,9 @@ if __name__ == "__main__":
     container_id = sys.argv[1]
     elasticDB = ElasticDatabase(EsCfg)
     differences = check_container(container_id, elasticDB, 'ubuntu:14.04')
-    
+
     print "SUSPICIOUS FILES"
-    space = 36 
+    space = 36
     for key in differences:
         print key, ' '*(space-len(key)) , differences[key]
     print 'DONE'

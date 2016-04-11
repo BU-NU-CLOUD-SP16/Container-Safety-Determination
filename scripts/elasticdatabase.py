@@ -37,7 +37,8 @@ class ElasticDatabase:
         #TODO: How should we handle this in case of error???
         return Elasticsearch([{'host': host, 'port': port}])
 
-    def index_dir(self, index_name, file_name, file_sdhash, flag):  #this function doesn't actually do what it says??
+    # redundant function, keeping it if needed in future
+    def index_dir(self, index_name, file_name, file_sdhash, flag):
         """
         Saves hashes from given path into the Elasticsearch
         :param dstdir: string, directory containing sdbf files
@@ -50,26 +51,30 @@ class ElasticDatabase:
         # save item
         self.index_file(index_name, docType, file_name, file_sdhash, flag)
 
-    def index_file(self, index_name, docType, dir_file_name, hashLine, flag):
+    def index_file(self, index_name, dir_file_name, hashLine, flag):
         """
         Saves a single file into the elasticsearch index provided.
-        The function hashes the file directory path and stores the hash in ES along its safe/unsafe status as a flag attribute
-        
+        The function hashes the file directory path and stores the hash in ES
+        along its safe/unsafe status as a flag attribute
         :param indexName:   string, index in elasticsearch e.g. ubuntu14.04
-        :param docType:     string, get from file suffix
         :param dirFileName: string, filepath + filename
         :param hashLine:    string, sdhash code for file
+        :flag:              boolean, if file is safe or not
         :return:            no return currently
         """
         #TODO check REST API return code and return value according to res
         print 'indexing item: ' + dir_file_name
         id = hashlib.md5(dir_file_name).hexdigest()
         basename = dir_file_name.split('/')[-1]
+        docType = 'default'
         res = self.es.index(
             index = index_name,
             doc_type = docType,
             id = id,
-            body = {'file': dir_file_name, 'sdhash': hashLine, 'basename':basename, 'flag': flag}
+            body = {'file': dir_file_name,
+                    'sdhash': hashLine,
+                    'basename':basename,
+                    'safe': flag}
         )
         print res
 
@@ -89,7 +94,7 @@ class ElasticDatabase:
 
     def search_forBasename(self, index_name, dir_file_name):
         """
-        Searches for a file's basename in the database. 
+        Searches for a file's basename in the database.
         param: indexName, file
         """
         print 'searching for basename...'
@@ -101,7 +106,7 @@ class ElasticDatabase:
         except:
             print "Can't find basename match"
             return
-        
+
     def getIndexName(self, image_name):
         """
         Computes and returns the index name for the image to be stored.
@@ -119,7 +124,7 @@ class ElasticDatabase:
         """
         index = 'imagehashes'
         searchIndex = self.search_file(index, image_name)
-        
+
         if searchIndex != None:
             return searchIndex['_id']
         else:
@@ -134,9 +139,9 @@ class ElasticDatabase:
 
     def getImageName_fromHash(self, hash):
         '''
-        Retrieves the original image name from a given hash. 
+        Retrieves the original image name from a given hash.
         E.g. If you input '52250eb3f1ccec5a687c4a4d14775e9d' it returns 'ubuntu14.04'
-        
+
         :param hash: string - the hash of the imagename to be retrieved
         :return: imageName: string - the original name of the image
         '''
@@ -149,13 +154,13 @@ class ElasticDatabase:
         except:
             print "Can't find image match"
             return
-        
+
     def check_similarity(self, ref_index, image_name, fileName, file_sdhash):
         """
         search in elasticsearch using filename and compute similarity
         :param indexName:  string, reference index in elasticsearch
         :param fileName:   string, should be filename to search
-        :param file_path:  string: should be filepath + filename
+        :param file_sdhash:  string, should be sdhash of file
         :return:           no return currently
         """
         #TODO: pass the customer image name:tag as parameter, 
@@ -191,11 +196,11 @@ class ElasticDatabase:
             judgeIndex = 'judgeresult:' + image_name
             # TODO if use index_file, here the body will
             # be {'sdhash': resline}.  Better change the key
-            self.index_file(judgeIndex, 'judgeResult', fileName, resline)
+            self.index_file(judgeIndex, 'judgeResult', fileName, False)
         os.remove("file_hash")
         os.remove("ref_hash")
 
-
+    # redundant function, keeping for future use if any
     def judge_dir(self, refIndexName, image_name, file_name, file_sdhash):
         """
         checks similarity for all files in path provided

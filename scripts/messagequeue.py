@@ -37,8 +37,6 @@ class MessageQueue:
     # declare a callback to process received message
     def callback(self, ch, method, properties, body):
         data = json.loads(body)
-        #print data
-        #time.sleep(1)
         image = data['image']
         base_image = data['base_image']
         file_path = data['relative_path']
@@ -46,9 +44,9 @@ class MessageQueue:
         sdhash = data['sdhash']
 
         if operation == "store":
-            self.es.index_dir(base_image, file_path, sdhash)
+            self.es.index_file(base_image, file_path, sdhash, True)
         else:
-            self.es.judge_dir(base_image, image, file_path, sdhash)
+            self.es.check_similarity(base_image, image, file_path, sdhash)
 
     # continuously process messages
     def start_consuming(self):
