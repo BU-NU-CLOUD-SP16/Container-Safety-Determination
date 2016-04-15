@@ -29,10 +29,13 @@ import sys
 import os
 
 sys.path.append(os.getcwd() + "/../")
-from csdcheck import hash_and_index
+from csdcheck import hash_and_index, check_container
+from scripts.elasticdatabase import ElasticDatabase
+from scripts.esCfg import EsCfg
 
 global CUR_DIR
 CUR_DIR=""
+REF_INDEX = 'ubuntu:14.04'
 
 app = Flask(__name__)
 
@@ -101,7 +104,16 @@ def test():
                         break
     return "Done", 200
 
-
+@app.route('/scan/<container_id>')
+def scan_container(container_id):
+    result = ''
+    try:
+        elasticDB = ElasticDatabase(EsCfg)
+        result = check_container(container_id, elasticDB, REF_INDEX)
+    except Exception as e:
+        result = 'Error: ' + str(e)
+    return result, 200
+    
 def log():
     print request.headers
     print request.args

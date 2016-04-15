@@ -280,6 +280,9 @@ def check_container(container_id, elasticDB, ref_index):
     """
     changed_files = {} # filename => similarity score 
     res = exec_cmd(['docker', 'diff', container_id])
+    if res is None:
+        return 'Error running docker diff.'
+
     files = res.splitlines()
     files_only = get_files_only(files)
 
@@ -328,7 +331,7 @@ def check_container(container_id, elasticDB, ref_index):
             os.remove("file_hash")
             os.remove("ref_hash")
 
-    return changed_files
+    return json.dumps(changed_files)
 
 
 if __name__ == "__main__":
