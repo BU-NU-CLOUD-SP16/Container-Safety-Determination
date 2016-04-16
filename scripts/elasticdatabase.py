@@ -181,19 +181,16 @@ class ElasticDatabase:
         if score == "100":
             print fileName + ' match 100%'
         else:
-            # Copy suspicious files just for debugging purpose
-            # test_path = file_path
-            # test_path = string.replace(test_path, "hashed_image", "flat_image")
-            # self.__exec_cmd(['cp', test_path, '/tmp/files'])
-
             try:
                 file_path = string.replace(file_path, ':', '_')
                 clamresult = sub.check_output(['clamscan',
                                                file_path,
-                                               '--no-summary'])
+                                               '--no-summary'],
+                                             stderr=sub.STDOUT)
                 print "clamscan's result: %s, file: %s" % (clamresult, file_path)
-            except:
-                clamresult = "failed to scan properly"
+            except sub.CalledProcessError as ex:
+                print "returncode other than 0 for ", file_path
+                clamresult = ex.output
             judgeIndex = 'judgeresult:' + image_name
             # TODO if use index_file, here the body will
             # be {'sdhash': resline}.  Better change the key
