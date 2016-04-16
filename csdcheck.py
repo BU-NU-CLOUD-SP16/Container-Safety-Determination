@@ -209,6 +209,12 @@ def get_base_image(imagename):
     base_image = base_image.strip()
     return base_image
 
+def get_container_base_img(container_id):
+    src = os.path.join(os.getcwd(), '../scripts/platform.sh')
+    dst = container_id + ':/csdplatform.sh'
+    exec_cmd(['docker', 'cp', src, dst])
+    base_image = exec_cmd(['docker', 'exec', container_id, '/csdplatform.sh'])
+    return base_image
 
 def hash_and_index(imagename, operation):
     tmpname = string.replace(imagename, ":", "_")
@@ -282,7 +288,7 @@ def check_container(container_id, elasticDB, ref_index):
     changed_files = {} # filename => similarity score 
     res = exec_cmd(['docker', 'diff', container_id])
     if res is None:
-        return 'Error running docker diff.'
+        return json.dumps({'error':'Error running docker diff.'})
 
     files = res.splitlines()
     files_only = get_files_only(files)
@@ -345,10 +351,13 @@ if __name__ == "__main__":
     # TEST CONTAINER
     container_id = sys.argv[1]
     elasticDB = ElasticDatabase(EsCfg)
-    differences = check_container(container_id, elasticDB, 'ubuntu:14.04')
+    os.chdir('endpoint')
+    ref_index = get_container_base_img(container_id)
+    print 'Reference index is ', ref_index
+    if ref_index is None:
+        print json.dumps({'error':'failed to get container base image'})
+    differences = check_container(container_id, elasticDB, ref_index)
 
     print "SUSPICIOUS FILES"
-    space = 36
-    for key in differences:
-        print key, ' '*(space-len(key)) , differences[key]
+    print differences
     print 'DONE'

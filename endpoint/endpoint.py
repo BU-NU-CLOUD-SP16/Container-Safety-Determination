@@ -29,13 +29,12 @@ import sys
 import os
 
 sys.path.append(os.getcwd() + "/../")
-from csdcheck import hash_and_index, check_container
+from csdcheck import hash_and_index, check_container, get_container_base_img
 from scripts.elasticdatabase import ElasticDatabase
 from scripts.esCfg import EsCfg
 
 global CUR_DIR
 CUR_DIR=""
-REF_INDEX = 'ubuntu:14.04'
 
 app = Flask(__name__)
 
@@ -108,10 +107,15 @@ def notify():
 def scan_container(container_id):
     result = ''
     try:
-        elasticDB = ElasticDatabase(EsCfg)
-        result = check_container(container_id, elasticDB, REF_INDEX)
+        ref_index = get_container_base_img(container_id)
+        print 'Reference index is ', ref_index
+        if ref_index is None:
+            result = json.dumps({'error':'failed to get container base image'})
+        else:
+            elasticDB = ElasticDatabase(EsCfg)
+            result = check_container(container_id, elasticDB, ref_index)
     except Exception as e:
-        result = 'Error: ' + str(e)
+        result = json.dumps({'error':'exception: ' + str(e) })
     return result, 200
     
 def log():
