@@ -111,8 +111,9 @@ def scan_container(container_id):
         print 'Reference index is ', ref_index
         if ref_index is None:
             result = json.dumps({'error':'failed to get container base image'})
-        elasticDB = ElasticDatabase(EsCfg)
-        result = check_container(container_id, elasticDB, ref_index)
+        else:
+            elasticDB = ElasticDatabase(EsCfg)
+            result = check_container(container_id, elasticDB, ref_index)
     except Exception as e:
         result = json.dumps({'error':'exception: ' + str(e) })
     return result, 200
