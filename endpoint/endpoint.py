@@ -52,8 +52,8 @@ def registry_endpoint():
     return "Docker registry endpoint!\n"
 
 
-@app.route("/test", methods=['POST'])
-def test():
+@app.route("/notify", methods=['POST'])
+def notify():
     #log()
     #change to CUR_DIR
     os.chdir(CUR_DIR)

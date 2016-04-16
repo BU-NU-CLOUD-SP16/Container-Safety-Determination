@@ -150,8 +150,7 @@ def make_dir(path):
             pass
 
 
-# For each file in srcdir, calculate sdhash and write to file in dstdir
-# Example: sdhash for file srcdir/usr/local/bin/prog1 will be written to dstdir/usr/local/bin/prog1
+# For each file in srcdir, calculate sdhash and submit to rabbitmq queue
 def process_sdhash(imagename, base_image, srcdir, msg_queue, operation):
     for root, subdirs, files in os.walk(srcdir):
         for filename in files:
@@ -166,7 +165,8 @@ def process_sdhash(imagename, base_image, srcdir, msg_queue, operation):
                     continue
                 if size < 1024:
                     continue
-                relative_path = file_path.replace(srcdir, '', 1)[1:] # 1: to remove '/'
+                # remove srcdir and leading '/' from the path
+                relative_path = file_path.replace(srcdir, '', 1)[1:]
                 sdhash = gen_sdhash(srcdir, file_path, relative_path)
 
                 # Since its for private registry images, imagename would be
@@ -180,6 +180,7 @@ def process_sdhash(imagename, base_image, srcdir, msg_queue, operation):
                 message['relative_path'] = relative_path
                 message['operation'] = operation
                 message['sdhash'] = sdhash
+                message['file_path'] = file_path
 
                 msg_queue.send(json.dumps(message))
 

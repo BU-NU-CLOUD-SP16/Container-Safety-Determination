@@ -1,7 +1,7 @@
 EsCfg = {
     #host ip
     'host'   : 'localhost',
-    #port 
+    #port
     'port'   : '9200',
     #node name
     'nodeName'   : 'node-elasticsearch-1',

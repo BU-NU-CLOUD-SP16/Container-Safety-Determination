@@ -42,11 +42,16 @@ class MessageQueue:
         file_path = data['relative_path']
         operation = data['operation']
         sdhash = data['sdhash']
+        file = data['file_path']
 
         if operation == "store":
-            self.es.index_file(base_image, file_path, sdhash, True)
+            basename = file_path.split('/')[-1]
+            body = {'file': file_path,
+                    'sdhash': sdhash,
+                    'basename': basename}
+            self.es.index_file(base_image, file_path, body)
         else:
-            self.es.check_similarity(base_image, image, file_path, sdhash)
+            self.es.check_similarity(base_image, image, file, file_path, sdhash)
 
     # continuously process messages
     def start_consuming(self):

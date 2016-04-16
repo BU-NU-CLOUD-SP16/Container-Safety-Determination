@@ -51,31 +51,23 @@ class ElasticDatabase:
         # save item
         self.index_file(index_name, docType, file_name, file_sdhash, flag)
 
-    def index_file(self, index_name, dir_file_name, hashLine, flag):
+    def index_file(self, index_name, dir_file_name, body):
         """
         Saves a single file into the elasticsearch index provided.
         The function hashes the file directory path and stores the hash in ES
         along its safe/unsafe status as a flag attribute
         :param indexName:   string, index in elasticsearch e.g. ubuntu14.04
         :param dirFileName: string, filepath + filename
-        :param hashLine:    string, sdhash code for file
-        :flag:              boolean, if file is safe or not
         :return:            no return currently
         """
         #TODO check REST API return code and return value according to res
         print 'indexing item: ' + dir_file_name
         id = hashlib.md5(dir_file_name).hexdigest()
-        basename = dir_file_name.split('/')[-1]
         docType = 'default'
-        res = self.es.index(
-            index = index_name,
-            doc_type = docType,
-            id = id,
-            body = {'file': dir_file_name,
-                    'sdhash': hashLine,
-                    'basename':basename,
-                    'safe': flag}
-        )
+        res = self.es.index(index = index_name,
+                            doc_type = docType,
+                            id = id,
+                            body = body)
         print res
 
     def search_file(self, index_name, dir_file_name):
@@ -155,10 +147,11 @@ class ElasticDatabase:
             print "Can't find image match"
             return
 
-    def check_similarity(self, ref_index, image_name, fileName, file_sdhash):
+    def check_similarity(self, ref_index, image_name, file_path, fileName, file_sdhash):
         """
         search in elasticsearch using filename and compute similarity
         :param indexName:  string, reference index in elasticsearch
+        :param file_path:  string, path of file on disk
         :param fileName:   string, should be filename to search
         :param file_sdhash:  string, should be sdhash of file
         :return:           no return currently
@@ -193,10 +186,24 @@ class ElasticDatabase:
             # test_path = string.replace(test_path, "hashed_image", "flat_image")
             # self.__exec_cmd(['cp', test_path, '/tmp/files'])
 
+            try:
+                file_path = string.replace(file_path, ':', '_')
+                clamresult = sub.check_output(['clamscan',
+                                               file_path,
+                                               '--no-summary'])
+                print "clamscan's result: %s, file: %s" % (clamresult, file_path)
+            except:
+                clamresult = "failed to scan properly"
             judgeIndex = 'judgeresult:' + image_name
             # TODO if use index_file, here the body will
             # be {'sdhash': resline}.  Better change the key
-            self.index_file(judgeIndex, 'judgeResult', fileName, False)
+            basename = fileName.split('/')[-1]
+            body = {'file': fileName,
+                    'sdhash': file_sdhash,
+                    'basename': basename,
+                    'safe': False,
+                    'clamscan-result': clamresult}
+            self.index_file(judgeIndex, fileName, body)
         os.remove("file_hash")
         os.remove("ref_hash")
 
@@ -244,7 +251,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     """
-    
+
     testEsObj = ElasticDatabase(EsCfg)
     testEsObj.index_file('test1', 'default', '/tests/test1/bin/ls', 'thisisahashNOT', 'safe')
     testEsObj.search_forBasename('test1', '/folder/potato/test2/ls')
@@ -258,7 +265,7 @@ if __name__ == '__main__':
     time.sleep(2)
     returnName = testEsObj.getImageName_fromHash('671ee2cf627ddf060f93d3539a7d2c82')
     print 'the name is: ', returnName
-    
+
     if len(sys.argv) < 2:
         print "Specify operation to perform: --index or --search"
         exit(0)
