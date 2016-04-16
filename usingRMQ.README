@@ -32,3 +32,6 @@ Do an image push to test that the image is detected and processed.
 Other commands:
 ^^^^^^^^^^^^^^^
 Clearing a queue: $ sudo rabbitmqctl purge_queue queuename
+
+List queues, show message count:
+$ sudo rabbitmqctl list_queues

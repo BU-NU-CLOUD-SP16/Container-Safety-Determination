@@ -30,8 +30,6 @@ from scripts.elasticdatabase import ElasticDatabase
 from scripts.messagequeue import MessageQueue
 from scripts.esCfg import EsCfg
 
-TEMP_DIR = "/tmp/csdproject"
-
 
 # cmd is a list: cmd and options if any
 def exec_cmd(cmd):
@@ -96,8 +94,12 @@ def flatten(dest_dir, base_path, layer):
     print('copying layer -- ', layer)
     layer_path = os.path.join(base_path, layer)
     try:
-        os.system('sudo cp -r ' + layer_path + '/* ' + dest_dir)
-    except:
+        for f in os.listdir(layer_path):
+            subdir_path = os.path.join(layer_path, f)
+            if os.path.isdir(subdir_path):
+                exec_cmd(['sudo', 'cp', '-r', subdir_path, dest_dir])
+    except BaseException as bex:
+        print 'error has happen: ', bex
         return
 
 
@@ -150,41 +152,6 @@ def make_dir(path):
             pass
 
 
-# For each file in srcdir, calculate sdhash and submit to rabbitmq queue
-def process_sdhash(imagename, base_image, srcdir, msg_queue, operation):
-    for root, subdirs, files in os.walk(srcdir):
-        for filename in files:
-            file_path = os.path.join(root, filename)
-            file_type = exec_cmd(['file',file_path])
-
-            # only process binary, library files and scripts
-            if 'ELF' in file_type or 'executable' in file_type:
-                try:
-                    size = os.stat(file_path).st_size
-                except:
-                    continue
-                if size < 1024:
-                    continue
-                # remove srcdir and leading '/' from the path
-                relative_path = file_path.replace(srcdir, '', 1)[1:]
-                sdhash = gen_sdhash(srcdir, file_path, relative_path)
-
-                # Since its for private registry images, imagename would be
-                # of format registry-ip:registry-port/image-name:tag
-                image = imagename.split("/")[1]
-                relative_path = string.replace(relative_path, ':', '_')
-
-                message = {}
-                message['image'] = image
-                message['base_image'] = base_image
-                message['relative_path'] = relative_path
-                message['operation'] = operation
-                message['sdhash'] = sdhash
-                message['file_path'] = file_path
-
-                msg_queue.send(json.dumps(message))
-
-
 def gen_sdhash(srcdir, file_path, relative_path):
     full_path = os.path.join(srcdir, relative_path)
     if ':' in relative_path:
@@ -195,8 +162,9 @@ def gen_sdhash(srcdir, file_path, relative_path):
     return exec_cmd(['sdhash', relative_path])
 
 
-def get_base_image(imagename):
-    path = os.path.join(os.getcwd(), "../scripts")
+def get_base_image(cwd, imagename):
+    path = os.path.join(cwd, "../scripts")
+    print 'libra path ', path
     mount_path = path + ":/tmp/scripts"
     command = ["docker",
                "run",
@@ -208,33 +176,6 @@ def get_base_image(imagename):
     base_image = exec_cmd(command).lower()
     base_image = base_image.strip()
     return base_image
-
-
-def hash_and_index(imagename, operation):
-    tmpname = string.replace(imagename, ":", "_")
-    imagetar = os.path.join(TEMP_DIR, tmpname, 'image.tar')
-    imagedir = os.path.join(TEMP_DIR, tmpname, 'image')
-    flat_imgdir = os.path.join(TEMP_DIR, tmpname, 'flat_image')
-    dstdir = os.path.join(TEMP_DIR, tmpname, 'hashed_image')
-    #make_dir(TEMP_DIR)
-    exec_cmd(['sudo', 'rm', '-rf', TEMP_DIR])
-    make_dir(imagedir)
-    make_dir(flat_imgdir)
-    make_dir(dstdir)
-    make_dir("/tmp/files") # for debugging purpose, will remove it
-
-    pull_image(imagename)
-    save_image(imagetar, imagename)
-    untar_image(imagetar, imagedir)
-
-    get_leaf_and_flatten(imagedir, flat_imgdir)
-
-    elasticDB = ElasticDatabase(EsCfg)
-    base_image = get_base_image(imagename)
-    print 'Base image is: ', base_image
-    print 'Operation is: ', operation
-    msg_queue = MessageQueue('localhost', 'dockerqueue', elasticDB)
-    process_sdhash(imagename, base_image, flat_imgdir, msg_queue, operation)
 
 
 # ------------------------------------------------------------------------
@@ -271,8 +212,8 @@ def check_container(container_id, elasticDB, ref_index):
     """
     Check a running container for files that have been changed. If a file
     been changed, determine if it's suspicious by checking if the reference
-    dataset contains a file with the same path. If so compare the hash of
-    the file with the reference hash.
+    dataset contains a file with the same path. If so compare the hash of 
+    the file with the reference hash. 
     param container_id: short or full container id
     param elasticDB: instance of ElasticDatabase connected to elasticsearch
                DB containing reference dataset
@@ -281,9 +222,6 @@ def check_container(container_id, elasticDB, ref_index):
     """
     changed_files = {} # filename => similarity score 
     res = exec_cmd(['docker', 'diff', container_id])
-    if res is None:
-        return 'Error running docker diff.'
-
     files = res.splitlines()
     files_only = get_files_only(files)
 
@@ -323,7 +261,7 @@ def check_container(container_id, elasticDB, ref_index):
             resline = exec_cmd(['sdhash', '-c', file1, file2, '-t','0'])
             resline = resline.strip()
             score = resline.split('|')[-1]
-
+            
             if score == "100":
                 print fileName + ' match 100%'
             else:
@@ -332,7 +270,7 @@ def check_container(container_id, elasticDB, ref_index):
             os.remove("file_hash")
             os.remove("ref_hash")
 
-    return json.dumps(changed_files)
+    return changed_files
 
 
 if __name__ == "__main__":
@@ -346,9 +284,9 @@ if __name__ == "__main__":
     container_id = sys.argv[1]
     elasticDB = ElasticDatabase(EsCfg)
     differences = check_container(container_id, elasticDB, 'ubuntu:14.04')
-
+    
     print "SUSPICIOUS FILES"
-    space = 36
+    space = 36 
     for key in differences:
         print key, ' '*(space-len(key)) , differences[key]
     print 'DONE'

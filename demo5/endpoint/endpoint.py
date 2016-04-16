@@ -23,19 +23,18 @@
 from flask import Flask
 from flask import request
 import ConfigParser
+import traceback
 import requests
 import json
+import pika
 import sys
 import os
 
 sys.path.append(os.getcwd() + "/../")
-from csdcheck import hash_and_index, check_container
-from scripts.elasticdatabase import ElasticDatabase
-from scripts.esCfg import EsCfg
+from scripts.messagequeue import MessageQueue
 
 global CUR_DIR
 CUR_DIR=""
-REF_INDEX = 'ubuntu:14.04'
 
 app = Flask(__name__)
 
@@ -44,6 +43,7 @@ CONFIG_FILE = os.path.join(APP_ROOT, 'settings.ini')
 
 config = ConfigParser.ConfigParser()
 config.read(CONFIG_FILE)
+MSG_QUEUE = MessageQueue('localhost', 'dockerqueue', None)
 
 username = config.get('registry', 'username')
 password = config.get('registry', 'password')
@@ -55,8 +55,9 @@ def registry_endpoint():
     return "Docker registry endpoint!\n"
 
 
-@app.route("/notify", methods=['POST'])
-def notify():
+@app.route("/test", methods=['POST'])
+def test():
+    print '...'
     #log()
     #change to CUR_DIR
     os.chdir(CUR_DIR)
@@ -97,23 +98,20 @@ def notify():
                         print "New image uploaded is: %s | tag: %s" % (repository, tag)
                         host = temp[0].split("/")[2]
                         image = host + "/" + repository + ":" + tag
-                        if tag == "golden":
-                            hash_and_index(image, "store")
-                        else:
-                            hash_and_index(image, "compare")
+                        try:
+                            MSG_QUEUE.send(image)
+                        except pika.exceptions.ConnectionClosed:
+                            print('RMQ connection closed. Re-establishing...')
+                            global MSG_QUEUE
+                            MSG_QUEUE = MessageQueue('localhost', 'dockerqueue', None)
+                            MSG_QUEUE.send(image)
+                        except Exception as e:
+                            print('MessageQueue error: ', type(e), e)
+                            traceback.print_exc()
                         break
     return "Done", 200
 
-@app.route('/scan/<container_id>')
-def scan_container(container_id):
-    result = ''
-    try:
-        elasticDB = ElasticDatabase(EsCfg)
-        result = check_container(container_id, elasticDB, REF_INDEX)
-    except Exception as e:
-        result = 'Error: ' + str(e)
-    return result, 200
-    
+
 def log():
     print request.headers
     print request.args
