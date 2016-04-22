@@ -2,7 +2,7 @@
 FROM ubuntu:15.04
 
 # Install the required packages
-RUN apt-get update && apt-get -y install python-pip rabbitmq-server git wget && pip install Flask && pip install elasticsearch && pip install pika
+RUN apt-get update && apt-get -y install python-pip rabbitmq-server git wget && pip install Flask && pip install elasticsearch && pip install pika && pip install -U flask-cors
 
 # Install docker
 RUN wget -qO- https://get.docker.com/ | sh
@@ -17,5 +17,6 @@ RUN git clone https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification 
 WORKDIR /usr/local/ccs/scripts
 
 RUN /usr/local/ccs/scripts/install_sdhash.sh
+RUN git pull
 
 CMD ["/bin/bash", "start_services.sh"]
