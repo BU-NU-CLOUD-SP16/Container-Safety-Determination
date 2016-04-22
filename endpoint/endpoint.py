@@ -22,6 +22,8 @@
 
 from flask import Flask
 from flask import request
+from flask.ext.cors import CORS
+
 import ConfigParser
 import requests
 import json
@@ -37,6 +39,7 @@ global CUR_DIR
 CUR_DIR=""
 
 app = Flask(__name__)
+CORS(app)
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(APP_ROOT, 'settings.ini')
@@ -54,8 +57,8 @@ def registry_endpoint():
     return "Docker registry endpoint!\n"
 
 
-@app.route("/notify", methods=['POST'])
-def notify():
+@app.route("/test", methods=['POST'])
+def test():
     #log()
     #change to CUR_DIR
     os.chdir(CUR_DIR)

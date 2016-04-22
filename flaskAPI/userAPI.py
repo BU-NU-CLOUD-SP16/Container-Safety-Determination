@@ -3,7 +3,7 @@ import json
 import os
 import hashlib
 from flask import * 
-from flask.ext.cors import cors
+from flask.ext.cors import CORS 
 
 app = Flask(__name__)
 CORS(app)
@@ -80,4 +80,4 @@ def docker_run():
     return 'done\n'
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port='9002')
