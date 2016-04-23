@@ -1,5 +1,5 @@
 #####################################################################
-# File: csdcheck.py
+# File: messagequeue.py
 # Author: Jeremy Mwenda <jmwenda@bu.edu>
 # Desc: Class MessageQueue is used for sending and receiving messages from RMQ.
 # An instance of this class should only be used for either sending or receiving, not both.

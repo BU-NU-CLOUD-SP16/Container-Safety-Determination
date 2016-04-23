@@ -14,7 +14,7 @@ sys.path.append(os.getcwd() + "/../")
 from scripts.elasticdatabase import ElasticDatabase
 from scripts.messagequeue import MessageQueue
 from scripts.esCfg import EsCfg
-from csdcheck import *
+from utils import *
 
 FILE_QUEUE = Queue.Queue()
 SDHASH_QUEUE = Queue.Queue()

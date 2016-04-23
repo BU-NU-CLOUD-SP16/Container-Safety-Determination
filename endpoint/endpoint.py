@@ -34,7 +34,7 @@ import sys
 import os
 
 sys.path.append(os.getcwd() + "/../")
-from csdcheck import hash_and_index, check_container, get_container_base_img
+from utils import hash_and_index, check_container, get_container_base_img
 from scripts.elasticdatabase import ElasticDatabase
 from scripts.esCfg import EsCfg
 
