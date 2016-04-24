@@ -172,14 +172,10 @@ def process_sdhash(imagename, base_image, srcdir, msg_queue, operation):
                 # remove srcdir and leading '/' from the path
                 relative_path = file_path.replace(srcdir, '', 1)[1:]
                 sdhash = gen_sdhash(srcdir, file_path, relative_path)
-
-                # Since its for private registry images, imagename would be
-                # of format registry-ip:registry-port/image-name:tag
-                image = imagename.split("/")[1]
                 relative_path = string.replace(relative_path, ':', '_')
 
                 message = {}
-                message['image'] = image
+                message['image'] = imagename
                 message['base_image'] = base_image
                 message['relative_path'] = relative_path
                 message['operation'] = operation
@@ -209,8 +205,9 @@ def get_base_image(imagename):
                imagename,
                "bin/sh",
                "/tmp/scripts/platform.sh"]
-    base_image = exec_cmd(command).lower()
-    base_image = base_image.strip()
+    base_image = exec_cmd(command)
+    if not base_image is None:
+        base_image = base_image.lower().strip()
     return base_image
 
 def get_container_base_img(container_id):
@@ -218,9 +215,27 @@ def get_container_base_img(container_id):
     dst = container_id + ':/csdplatform.sh'
     exec_cmd(['docker', 'cp', src, dst])
     base_image = exec_cmd(['docker', 'exec', container_id, '/csdplatform.sh'])
+    if not base_image is None:
+        base_image = base_image.lower().strip()
     return base_image
 
 def hash_and_index(imagename, operation):
+    elasticDB = ElasticDatabase(EsCfg)
+    base_image = get_base_image(imagename)
+    print 'Base image is: ', base_image
+
+    # Private registry imagenames would be of
+    # format registry-ip:registry-port/image-name:tag
+    short_imagename = imagename.split("/")[-1]
+
+    if operation == 'compare' and not elasticDB.check_index_exists(base_image):
+        print('Indexing missing base image: ', base_image)
+        process_image(base_image, base_image, base_image, 'store', elasticDB)
+
+    process_image(imagename, short_imagename, base_image, operation, elasticDB)
+
+def process_image(imagename, short_imagename, base_image, operation, elasticDB):
+    print 'Processing image: ', imagename, '. Operation is: ', operation
     tmpname = string.replace(imagename, ":", "_")
     imagetar = os.path.join(TEMP_DIR, tmpname, 'image.tar')
     imagedir = os.path.join(TEMP_DIR, tmpname, 'image')
@@ -239,12 +254,8 @@ def hash_and_index(imagename, operation):
 
     get_leaf_and_flatten(imagedir, flat_imgdir)
 
-    elasticDB = ElasticDatabase(EsCfg)
-    base_image = get_base_image(imagename)
-    print 'Base image is: ', base_image
-    print 'Operation is: ', operation
     msg_queue = MessageQueue('localhost', 'dockerqueue', elasticDB)
-    process_sdhash(imagename, base_image, flat_imgdir, msg_queue, operation)
+    process_sdhash(short_imagename, base_image, flat_imgdir, msg_queue, operation)
 
 
 # ------------------------------------------------------------------------
@@ -277,18 +288,25 @@ def copy_from_container(src, dest):
     exec_cmd(['docker', 'cp', src, dest])
 
 
-def check_container(container_id, elasticDB, ref_index):
+def check_container(container_id):
     """
     Check a running container for files that have been changed. If a file
     been changed, determine if it's suspicious by checking if the reference
     dataset contains a file with the same path. If so compare the hash of
     the file with the reference hash.
     param container_id: short or full container id
-    param elasticDB: instance of ElasticDatabase connected to elasticsearch
-               DB containing reference dataset
-    param ref_index: index name of reference data set in elasticsearch
-    return: Dictionary of suspicious files
+    return: json string containing suspicious files
     """
+    base_image = get_container_base_img(container_id)
+    if base_image is None:
+        return json.dumps({'error':'failed to get container base image'})
+    
+    elasticDB = ElasticDatabase(EsCfg)
+    if not elasticDB.check_index_exists(base_image):
+        print('Indexing missing base image: ', base_image)
+        process_image(base_image, base_image, base_image, 'store', elasticDB)
+
+    print 'Reference index is ', base_image    
     changed_files = {} # filename => similarity score 
     res = exec_cmd(['docker', 'diff', container_id])
     if res is None:
@@ -304,7 +322,7 @@ def check_container(container_id, elasticDB, ref_index):
     for s in files_only:
         filename = s[3:] # filename starts at 3
         # check if ref DB contains this file path
-        result = elasticDB.search_file(ref_index, filename)
+        result = elasticDB.search_file(base_image, filename)
 
         if result is None:
             changed_files[filename] = -1
@@ -354,14 +372,9 @@ if __name__ == "__main__":
 
     # TEST CONTAINER
     container_id = sys.argv[1]
-    elasticDB = ElasticDatabase(EsCfg)
     os.chdir('endpoint')
-    ref_index = get_container_base_img(container_id)
-    print 'Reference index is ', ref_index
-    if ref_index is None:
-        print json.dumps({'error':'failed to get container base image'})
-    differences = check_container(container_id, elasticDB, ref_index)
+    differences = check_container(container_id)
 
-    print "SUSPICIOUS FILES"
+    print 'SUSPICIOUS FILES'
     print differences
     print 'DONE'

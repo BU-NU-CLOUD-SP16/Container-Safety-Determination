@@ -216,6 +216,9 @@ class ElasticDatabase:
         #TODO check time efficiency
         self.check_similarity(refIndexName, image_name, file_name, file_sdhash)
 
+    def check_index_exists(self, index_name):
+        return self.es.indices.exists(index=index_name)
+
     def delete_index(self, indexName):
         print "Confirm to delete index: " + indexName + "?(Y / N) "
         ans = raw_input()

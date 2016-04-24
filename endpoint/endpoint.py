@@ -34,7 +34,7 @@ import sys
 import os
 
 sys.path.append(os.getcwd() + "/../")
-from utils import hash_and_index, check_container, get_container_base_img
+from utils import hash_and_index, check_container
 from scripts.elasticdatabase import ElasticDatabase
 from scripts.esCfg import EsCfg
 
@@ -114,13 +114,7 @@ def test():
 def scan_container(container_id):
     result = ''
     try:
-        ref_index = get_container_base_img(container_id)
-        print 'Reference index is ', ref_index
-        if ref_index is None:
-            result = json.dumps({'error':'failed to get container base image'})
-        else:
-            elasticDB = ElasticDatabase(EsCfg)
-            result = check_container(container_id, elasticDB, ref_index)
+        result = check_container(container_id)
     except Exception as e:
         result = json.dumps({'error':'exception: ' + str(e) })
     return result, 200
