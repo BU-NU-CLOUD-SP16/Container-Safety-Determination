@@ -170,6 +170,7 @@ registry:
     - $IMAGESTORE:/var/lib/registry
     - $REGISTRYCERTS:/certs
     - $AUTHDIR:/auth
+    - ./config.yml:/etc/docker/registry/config.yml
 EOF
 docker-compose up -d
 
