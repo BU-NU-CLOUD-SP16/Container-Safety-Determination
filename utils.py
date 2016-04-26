@@ -30,7 +30,7 @@ from scripts.elasticdatabase import ElasticDatabase
 from scripts.messagequeue import MessageQueue
 from scripts.esCfg import EsCfg
 
-TEMP_DIR = "/tmp/csdproject"
+TEMP_DIR = "/opt/csd/tmp/csdproject"
 
 
 # cmd is a list: cmd and options if any
@@ -49,7 +49,7 @@ def untarlayers(imagedir):
         layerdir = os.path.join(imagedir, d)
         if os.path.isdir(layerdir):
             layertar = os.path.join(layerdir, 'layer.tar')
-            exec_cmd(['sudo', 'tar', '-xvf', layertar, '-C', layerdir])
+            exec_cmd(['tar', '-xvf', layertar, '-C', layerdir])
             os.remove(layertar)
 
 
@@ -99,7 +99,7 @@ def flatten(dest_dir, base_path, layer):
         for f in os.listdir(layer_path):
             subdir_path = os.path.join(layer_path, f)
             if os.path.isdir(subdir_path):
-                exec_cmd(['sudo', 'cp', '-r', subdir_path, dest_dir])
+                exec_cmd(['cp', '-r', subdir_path, dest_dir])
     except BaseException as bex:
         print 'exec_cmd error: ', bex
         return
@@ -141,7 +141,7 @@ def get_leaf_and_flatten(imagedir,dest_dir):
     leaf = get_leaf(imagedir)
     flatten(dest_dir, imagedir, leaf)
     dev_dir = os.path.join(dest_dir, "dev")
-    exec_cmd(['sudo', 'rm', '-rf', dev_dir])
+    exec_cmd(['rm', '-rf', dev_dir])
 
 
 def make_dir(path):
@@ -190,7 +190,7 @@ def gen_sdhash(srcdir, file_path, relative_path):
     if ':' in relative_path:
         relative_path = string.replace(relative_path, ':', '_')
         tmp_path = os.path.join(srcdir, relative_path)
-        exec_cmd(['sudo', 'mv', full_path, tmp_path])
+        exec_cmd(['mv', full_path, tmp_path])
     os.chdir(srcdir)
     return exec_cmd(['sdhash', relative_path])
 
@@ -242,11 +242,11 @@ def process_image(imagename, short_imagename, base_image, operation, elasticDB):
     flat_imgdir = os.path.join(TEMP_DIR, tmpname, 'flat_image')
     dstdir = os.path.join(TEMP_DIR, tmpname, 'hashed_image')
     #make_dir(TEMP_DIR)
-    exec_cmd(['sudo', 'rm', '-rf', TEMP_DIR])
+    exec_cmd(['rm', '-rf', TEMP_DIR])
     make_dir(imagedir)
     make_dir(flat_imgdir)
     make_dir(dstdir)
-    make_dir("/tmp/files") # for debugging purpose, will remove it
+    #make_dir("/tmp/files") # for debugging purpose, will remove it
 
     pull_image(imagename)
     save_image(imagetar, imagename)
