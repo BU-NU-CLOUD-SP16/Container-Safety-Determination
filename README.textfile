@@ -1,0 +1,41 @@
+!https://github.com/konpap94/csdREADME/blob/master/images/csd_picture_final.png!
+
+Container-Safety-Determination(CSD) provides a scalable tool aimed to help classify the safety of the code that runs in containers. CSD scans an image and compares all its files with a reference database of known malicious and non-malicious binaries in order to determine the safety-state of the container. 
+
+*Rahul Sharma*: **https://www.linkedin.com/in/rahulsharmaait**
+*Jeremy Mwenda*: **https://www.linkedin.com/in/jeremy-mwenda-7868a12a**  
+*Renqing Gao*: **https://www.linkedin.com/in/gladiusgao/en**  
+*Kostas Papadopoulos*: **www.linkedin.com/in/kwstaspapadopoulos**  
+  
+Mentored by: *Sastry S. Dury  (IBM Research)*
+
+------------------------------------
+
+
+h6. Prerequisites
+```sudo apt-get -y install python-pip rabbitmq-server git wget clamav docker-compose
+sudo pip install Flask
+pip install elasticsearch
+pip install pika
+pip install -U flask-cors```
+
+h6. Docker installation
+```wget <notextile>-qO- https://get.docker.com/ | sh
+sudo usermod -aG docker $(whoami)
+reboot```
+
+h6. Installation:
+```git clone https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification.git```
+
+h3. What it does:  
+
+ **Detect New Image --> Pull --> Hash --> Compare**
+
+!https://github.com/konpap94/csdREADME/blob/master/images/general_diagram2.png!
+
+CSD works by listening an assigned Docker registry. Whenever someone pushes a new image, CSD pulls that image and proceeds to compute the hash of all its files. CSD utilizes <a href="https://github.com/sdhash/sdhash">sdhash</a> to compare the binaries of each file to an <a href="https://github.com/elastic/elasticsearch">elasticsearch</a> database, containing the hashes of all the reference image files. The files that are not found in the database or are deemed to be different from the reference, can then be sent to external scanning tools for further analysis. We have currently integrated ClamAV as an external scanner for such files. 
+
+The end-goal of the CSD design is to provide a customizable and scalable way for engineers to check safety-related attributes of suspicious image files in order to help them decide the safety status of an image.
+
+h2. Contributors:
+!https://github.com/konpap94/csdREADME/blob/master/images/CSD_portraitGANGSTA.png!
