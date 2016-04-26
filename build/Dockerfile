@@ -2,7 +2,7 @@
 FROM ubuntu:15.04
 
 # Install the required packages
-RUN apt-get update && apt-get -y install python-pip rabbitmq-server git wget clamav && pip install Flask elasticsearch pika requests && pip install -U flask-cors
+RUN apt-get update && apt-get -y install python-pip rabbitmq-server git wget clamav vim && pip install Flask elasticsearch pika requests && pip install -U flask-cors
 
 # Install docker
 RUN wget -qO- https://get.docker.com/ | sh

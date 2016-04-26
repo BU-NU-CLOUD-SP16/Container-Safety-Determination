@@ -5,5 +5,5 @@
 cd ../endpoint
 python processor.py &
 
-cp settings_template.ini settings.ini
+#cp settings_template.ini settings.ini
 python endpoint.py
