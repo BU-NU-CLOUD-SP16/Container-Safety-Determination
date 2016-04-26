@@ -1,13 +1,15 @@
-!https://github.com/konpap94/csdREADME/blob/master/images/csd_picture_final.png!
+!https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/blob/master/images/csd_picture_final.png!
 
-Container-Safety-Determination(CSD) provides a scalable tool aimed to help classify the safety of the code that runs in containers. CSD scans an image and compares all its files with a reference database of known malicious and non-malicious binaries in order to determine the safety-state of the container. 
+Container Safety Determination (CSD) is a scanning and monitoring tool that lets engineers examine the safety state of their containers. The tool works for both images and containers, and can be configured to work without user intervention.
+
+CSD detects suspicious files by comparing all the files of a given image with a database of known malicious and non-malicious binaries in order to determine how safe an image is. The security engineer works on the feedback received for a particular image and takes action accordingly.
 
 *Rahul Sharma*: **https://www.linkedin.com/in/rahulsharmaait**
 *Jeremy Mwenda*: **https://www.linkedin.com/in/jeremy-mwenda-7868a12a**  
 *Renqing Gao*: **https://www.linkedin.com/in/gladiusgao/en**  
 *Kostas Papadopoulos*: **www.linkedin.com/in/kwstaspapadopoulos**  
   
-Mentored by: *Sastry S. Dury  (IBM Research)*
+Mentored by: *Sastry S Duri  (IBM Research)*
 
 ------------------------------------
 
@@ -31,11 +33,19 @@ h3. What it does:
 
  **Detect New Image --> Pull --> Hash --> Compare**
 
-!https://github.com/konpap94/csdREADME/blob/master/images/general_diagram2.png!
+!https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/blob/master/images/general_diagram2.png!
 
-CSD works by listening an assigned Docker registry. Whenever someone pushes a new image, CSD pulls that image and proceeds to compute the hash of all its files. CSD utilizes <a href="https://github.com/sdhash/sdhash">sdhash</a> to compare the binaries of each file to an <a href="https://github.com/elastic/elasticsearch">elasticsearch</a> database, containing the hashes of all the reference image files. The files that are not found in the database or are deemed to be different from the reference, can then be sent to external scanning tools for further analysis. We have currently integrated ClamAV as an external scanner for such files. 
+CSD works by listening for notifications from an assigned Docker registry. Whenever someone pushes a new image, CSD pulls that image and proceeds to compute similarity digest hashes of all its files. CSD utilizes <a href="https://github.com/sdhash/sdhash">sdhash</a> to compare files from an image to a reference data set of known files stored in <a href="https://github.com/elastic/elasticsearch">elasticsearch</a> database. The files that are not found in the database or are deemed to be different from the reference files, can then be sent to external scanning tools for further analysis. We have currently integrated ClamAV as an external scanner for such files. 
 
-The end-goal of the CSD design is to provide a customizable and scalable way for engineers to check safety-related attributes of suspicious image files in order to help them decide the safety status of an image.
+The end-goal of the CSD design is to provide a customizable and scalable way for engineers to check safety related attributes of image files in order to help them decide the if an image is safe.
+
+More detailed documentation of our project can be found on the project <a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki">wiki page</a>. The wiki includes:
+<a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Setting-up-environment">Setting up environment</a>
+<a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Docker-registry">Setting up docker registry</a>
+<a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Starting-with-the-project">Running the project</a>
+<a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Working-with-elasticsearch">Running elasticsearch</a>
+<a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Scalable-design">Description of design scalability</a>
+
 
 h2. Contributors:
-!https://github.com/konpap94/csdREADME/blob/master/images/CSD_portraitGANGSTA.png!
+!https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/blob/master/images/CSD_portraits.png!
