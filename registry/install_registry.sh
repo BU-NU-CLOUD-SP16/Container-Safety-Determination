@@ -157,7 +157,7 @@ docker run --entrypoint htpasswd registry:2 -Bbn $uname $password \
 cat > docker-compose.yml << EOF
 registry:
   restart: always
-  image: registry:2.1.1
+  image: registry:2.3
   ports:
     - $2:5000
   environment:
