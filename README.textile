@@ -4,10 +4,10 @@ Container Safety Determination (CSD) is a scanning and monitoring tool that lets
 
 CSD detects suspicious files by comparing all the files of a given image with a database of known malicious and non-malicious binaries in order to determine how safe an image is. The security engineer works on the feedback received for a particular image and takes action accordingly.
 
-*Rahul Sharma*: **https://www.linkedin.com/in/rahulsharmaait**
-*Jeremy Mwenda*: **https://www.linkedin.com/in/jeremy-mwenda-7868a12a**  
-*Renqing Gao*: **https://www.linkedin.com/in/gladiusgao/en**  
-*Kostas Papadopoulos*: **www.linkedin.com/in/kwstaspapadopoulos**  
+"Rahul Sharma(Rahul on Linkedin)":https://www.linkedin.com/in/rahulsharmaait
+"Jeremy Mwenda(Jeremy on Linkedin)":https://www.linkedin.com/in/jeremy-mwenda-7868a12a  
+"Renqing Gao(Renqing on Linkedin)":https://www.linkedin.com/in/gladiusgao/en
+"Kostas Papadopoulos(Kostas on Linkedin)":www.linkedin.com/in/kwstaspapadopoulos
   
 Mentored by: *Sastry S Duri  (IBM Research)*
 
