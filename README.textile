@@ -27,7 +27,7 @@ sudo usermod -aG docker $(whoami)
 reboot```
 
 h6. Installation:
-```git clone https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification.git```
+<a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Setting-up-environment">Installation steps</a>
 
 h3. What it does:  
 
