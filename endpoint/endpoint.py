@@ -25,6 +25,7 @@ from flask import Flask
 from flask import request
 from flask.ext.cors import CORS
 from elasticsearch import Elasticsearch
+import logging.config
 
 import ConfigParser
 import requests
@@ -54,15 +55,16 @@ username = config.get('registry', 'username')
 password = config.get('registry', 'password')
 auth = (username, password)
 
+logging.config.fileConfig('../logging.conf')
+logger = logging.getLogger(__file__)
 
 @app.route("/")
 def registry_endpoint():
-    return "Docker registry endpoint!\n"
+    return "Docker registry endpoint!\n", 200
 
 
-@app.route("/test", methods=['POST'])
-def test():
-    #log()
+@app.route("/notify", methods=['POST'])
+def notify():
     #change to CUR_DIR
     os.chdir(CUR_DIR)
     data = json.loads(request.data)
@@ -190,12 +192,6 @@ def docker_run():
     cmd = ' '.join(cmd)
     os.system(cmd)
     return 'done\n'
-
-
-def log():
-    print request.headers
-    print request.args
-    print request.data
 
 
 if __name__ == "__main__":
