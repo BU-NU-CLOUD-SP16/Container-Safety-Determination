@@ -58,6 +58,7 @@ auth = (username, password)
 logging.config.fileConfig('../logging.conf')
 logger = logging.getLogger(__file__)
 
+
 @app.route("/")
 def registry_endpoint():
     return "Docker registry endpoint!\n", 200
@@ -118,7 +119,8 @@ def scan_container(container_id):
     try:
         result = check_container(container_id)
     except Exception as e:
-        result = json.dumps({'error':'exception: ' + str(e) })
+        logger.error("exception: %s", str(e))
+        result = json.dumps({'error': 'exception: ' + str(e)})
     return result, 200
 
 
@@ -134,11 +136,7 @@ def get_judge_res(judge_image_dir):
             search_offset = int(request.args.get('offset'))
         if 'size' in request.args:
             search_size = int(request.args.get('size'))
-        res_index = es.search(
-            index = judge_image_dir,
-            size = search_size,
-            from_=search_offset
-        )
+        res_index = es.search(index=judge_image_dir, size=search_size, from_=search_offset)
     except:
         del(es)
         return 'Error: index do not exist\n'
@@ -146,10 +144,10 @@ def get_judge_res(judge_image_dir):
     for item in res_index['hits']['hits']:
         res_lst.append(item['_source']['file'])
     res_dict = {
-        'total' : res_index['hits']['total'],
-        'file_list' : res_lst,
-        'from_' : search_offset,
-        'size' : len(res_index['hits']['hits'])
+        'total': res_index['hits']['total'],
+        'file_list': res_lst,
+        'from_': search_offset,
+        'size': len(res_index['hits']['hits'])
     }
     json_res = json.dumps(res_dict)
     del(es)
@@ -167,7 +165,7 @@ def correct_false_warning(judge_image_dir):
         return 'Error: no file name in request\n'
     judge_image_dir = 'judgeresult:' + judge_image_dir
     try:
-        res = es.delete(index = judge_image_dir, doc_type = 'judgeResult', id = md5_file_name)
+        res = es.delete(index=judge_image_dir, doc_type='judgeResult', id=md5_file_name)
     except:
         del(es)
         return 'Error: file do not exist\n'
@@ -175,8 +173,7 @@ def correct_false_warning(judge_image_dir):
     return json.dumps(res['_shards'])
 
 
-#which machine should run docker image? remotely or locally
-#and if word should be a list of arg?
+# TODO: Need to fix this method [05/16/2016]
 @app.route('/docker_run/')
 def docker_run():
     es = Elasticsearch(EsCfg)
@@ -186,7 +183,7 @@ def docker_run():
     try:
         image_name = request.args.get('image_name')
     except:
-        return 'can not get image_name in request\n'
+        return "can not get 'image_name' in request\n"
     arg_lst = request.args.getlist('args')
     cmd = ['docker run', image_name] + arg_lst
     cmd = ' '.join(cmd)
