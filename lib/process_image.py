@@ -8,6 +8,9 @@ import logging
 import subprocess as sub
 
 from sdhash import gen_hash
+from db.elasticsearch.elasticdatabase import ElasticDatabase
+from scripts.esCfg import EsCfg
+from scripts.messagequeue import MessageQueue
 
 logger = logging.getLogger(__name__)
 
@@ -148,12 +151,12 @@ def make_dir(path):
             pass
 
 
-def get_files(image):
-    pass
+#def get_files(image):
+#    pass
 
 
-def process(image, base, path):
-    pass
+#def process(image, base, path):
+#    pass
 
 
 def process(image, short_imagename, base, operation, elasticDB):
@@ -208,3 +211,19 @@ def process_sdhash(imagename, base_image, srcdir, msg_queue, operation):
                 message['file_path'] = file_path
 
                 msg_queue.send(json.dumps(message))
+
+
+def hash_and_index(imagename, operation):
+    elasticDB = ElasticDatabase(EsCfg)
+    base_image = get_base(imagename)
+    print 'Base image is: ', base_image
+
+    # Private registry imagenames would be of
+    # format registry-ip:registry-port/image-name:tag
+    short_imagename = imagename.split("/")[-1]
+
+    if operation == 'compare' and not elasticDB.check_index_exists(base_image):
+        print('Indexing missing base image: ', base_image)
+        process(base_image, base_image, base_image, 'store', elasticDB)
+
+    process(imagename, short_imagename, base_image, operation, elasticDB)

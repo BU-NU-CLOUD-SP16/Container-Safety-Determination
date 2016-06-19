@@ -1,7 +1,8 @@
 from abc import ABCMeta, abstractmethod
 
 
-class BaseDatabase(metaclass=ABCMeta):
+class BaseDatabase():
+    __metaclass__ = ABCMeta
 
     @abstractmethod
     def index(self, **kwargs):

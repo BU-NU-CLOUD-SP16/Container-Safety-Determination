@@ -14,7 +14,12 @@
 
 import pika
 import json
+import os
+import subprocess as sub
+import string
 import time # remove
+
+from lib.sdhash import exec_cmd
 
 class MessageQueue:
     def __init__(self, host, queue, elasticDB):
@@ -44,14 +49,58 @@ class MessageQueue:
         sdhash = data['sdhash']
         file = data['file_path']
 
+        # We always store only the base images for reference
         if operation == "store":
             basename = file_path.split('/')[-1]
             body = {'file': file_path,
                     'sdhash': sdhash,
                     'basename': basename}
-            self.es.index_file(base_image, file_path, body)
+            self.es.index(index=base_image, filename=file_path, body=body)
         else:
-            self.es.check_similarity(base_image, image, file, file_path, sdhash)
+            fileDict = self.es.search(index=base_image, filename=file_path)
+            if fileDict == None:
+                print "skip file as its not present"
+                return
+            ref_sdhash = fileDict['_source']['sdhash']
+            features = sdhash.split(":")[10:12]
+            if int(features[0]) < 2 and int(features[1]) < 16:
+                print "skipping since only one component with < 16 features"
+                return
+            with open("file_hash", "w") as f:
+                f.write(sdhash)
+            with open("ref_hash", "w") as f:
+                f.write(ref_sdhash)
+            file1 = os.path.abspath('file_hash')
+            file2 = os.path.abspath('ref_hash')
+            # TODO: error handling
+            resline = exec_cmd(['sdhash', '-c', file1, file2, '-t', '0'])
+            resline = resline.strip()
+            score = resline.split('|')[-1]
+            if score == "100":
+                print file + ' match 100%'
+            else:
+                try:
+                    file_path = string.replace(file_path, ':', '_')
+                    clamresult = sub.check_output(['clamscan',
+                                                   file_path,
+                                                   '--no-summary'],
+                                                  stderr=sub.STDOUT)
+                    print "clamscan's result: %s, file: %s" % (clamresult, file_path)
+                except sub.CalledProcessError as ex:
+                    print "returncode other than 0 for ", file_path
+                    clamresult = ex.output
+                judgeIndex = 'judgeresult:' + image
+                # TODO if use index_file, here the body will
+                # be {'sdhash': resline}.  Better change the key
+                basename = file.split('/')[-1]
+                body = {'file': file,
+                        'sdhash': sdhash,
+                        'basename': basename,
+                        'safe': False,
+                        'clamscan-result': clamresult}
+                self.es.index(index=judgeIndex, filename=file, body=body)
+            os.remove("file_hash")
+            os.remove("ref_hash")
 
     # continuously process messages
     def start_consuming(self):

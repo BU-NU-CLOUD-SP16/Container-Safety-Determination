@@ -353,7 +353,7 @@ def check_container(container_id):
             score = resline.split('|')[-1]
 
             if score == "100":
-                print fileName + ' match 100%'
+                print filename + ' match 100%'
             else:
                 changed_files[filename] = score
 

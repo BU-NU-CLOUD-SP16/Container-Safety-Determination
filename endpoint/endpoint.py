@@ -35,11 +35,12 @@ import sys
 import os
 
 sys.path.append(os.getcwd() + "/../")
-from utils import hash_and_index, check_container
+from utils import check_container
+from lib.process_image import hash_and_index
+
 from scripts.elasticdatabase import ElasticDatabase
 from scripts.esCfg import EsCfg
 
-global CUR_DIR
 CUR_DIR=""
 
 app = Flask(__name__)

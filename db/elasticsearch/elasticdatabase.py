@@ -40,9 +40,9 @@ class ElasticDatabase(BaseDatabase):
         Note: filename has to be full dir + filename format
         """
         logger.debug("searching for dir path...")
+        index = kwargs.get("index")
+        filename = kwargs.get("filename")
         try:
-            index = kwargs.get("index")
-            filename = kwargs.get("filename")
             id = hashlib.md5(filename).hexdigest()
             resDict = self.es.get(index=index, id=id)
             return resDict
@@ -121,3 +121,6 @@ class ElasticDatabase(BaseDatabase):
         except:
             print "Can't find image match"
             return None
+
+    def check_index_exists(self, index_name):
+        return self.es.indices.exists(index=index_name)
