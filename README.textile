@@ -1,18 +1,20 @@
 !https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/blob/master/images/csd_picture_final.png!
 
-Container Safety Determination (CSD) is a scanning and monitoring tool that lets engineers examine the safety state of their containers. The tool works for both images and containers, and can be configured to work without user intervention.
+Container Safety Determination (CSD) is an open source scanning and monitoring tool that lets engineers examine the safety state of their containers. The tool works for both images and containers, and can be configured to work without user intervention.
 
 CSD detects suspicious files by comparing all the files of a given image with a database of known malicious and non-malicious binaries in order to determine how safe an image is. The security engineer works on the feedback received for a particular image and takes action accordingly.
 
-*Rahul Sharma*: **https://www.linkedin.com/in/rahulsharmaait**
-*Jeremy Mwenda*: **https://www.linkedin.com/in/jeremy-mwenda-7868a12a**  
-*Renqing Gao*: **https://www.linkedin.com/in/gladiusgao/en**  
-*Kostas Papadopoulos*: **www.linkedin.com/in/kwstaspapadopoulos**  
+"Rahul Sharma(Rahul on Linkedin)":https://www.linkedin.com/in/rahulsharmaait
+"Jeremy Mwenda(Jeremy on Linkedin)":https://www.linkedin.com/in/jeremy-mwenda-7868a12a  
+"Renqing Gao(Renqing on Linkedin)":https://www.linkedin.com/in/gladiusgao/en
+"Kostas Papadopoulos(Kostas on Linkedin)":www.linkedin.com/in/kwstaspapadopoulos
   
 Mentored by: *Sastry S Duri  (IBM Research)*
 
 ------------------------------------
+h2. Project Demo
 
+!https://raw.githubusercontent.com/BU-NU-CLOUD-SP16/Container-Code-Classification/master/images/csd_youtube.png!:https://youtu.be/IflXJ8SY9Tk
 
 h6. Prerequisites
 ```sudo apt-get -y install python-pip rabbitmq-server git wget clamav docker-compose
@@ -27,7 +29,7 @@ sudo usermod -aG docker $(whoami)
 reboot```
 
 h6. Installation:
-```git clone https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification.git```
+<a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Setting-up-environment">Installation steps</a>
 
 h3. What it does:  
 
@@ -39,12 +41,14 @@ CSD works by listening for notifications from an assigned Docker registry. Whene
 
 The end-goal of the CSD design is to provide a customizable and scalable way for engineers to check safety related attributes of image files in order to help them decide the if an image is safe.
 
+------------------------------------
+
 More detailed documentation of our project can be found on the project <a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki">wiki page</a>. The wiki includes:
-<a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Setting-up-environment">Setting up environment</a>
-<a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Docker-registry">Setting up docker registry</a>
-<a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Starting-with-the-project">Running the project</a>
-<a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Working-with-elasticsearch">Running elasticsearch</a>
-<a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Scalable-design">Description of design scalability</a>
+* <a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Setting-up-environment">Setting up environment</a>
+* <a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Docker-registry">Setting up docker registry</a>
+* <a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Starting-with-the-project">Running the project</a>
+* <a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Working-with-elasticsearch">Running elasticsearch</a>
+* <a href="https://github.com/BU-NU-CLOUD-SP16/Container-Code-Classification/wiki/Scalable-design">Description of design scalability</a>
 
 
 h2. Contributors:
