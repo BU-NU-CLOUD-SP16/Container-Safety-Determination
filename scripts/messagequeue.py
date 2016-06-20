@@ -1,8 +1,9 @@
 #####################################################################
 # File: messagequeue.py
 # Author: Jeremy Mwenda <jmwenda@bu.edu>
-# Desc: Class MessageQueue is used for sending and receiving messages from RMQ.
-# An instance of this class should only be used for either sending or receiving, not both.
+# Desc: Class MessageQueue is used for sending and receiving messages
+# from RMQ. An instance of this class should only be used for either
+# sending or receiving, not both.
 # TODO: add hostname and queue name to config file
 # TODO: handle RMQ exceptions
 #
@@ -17,9 +18,10 @@ import json
 import os
 import subprocess as sub
 import string
-import time # remove
+import logging
 
 from lib.sdhash import exec_cmd
+logger = logging.getLogger(__name__)
 
 class MessageQueue:
     def __init__(self, host, queue, elasticDB):
@@ -35,9 +37,10 @@ class MessageQueue:
 
     # send message using default exchange 
     def send(self, message):
-        self.channel.basic_publish(exchange='', routing_key=self.queue, body=message)
+        self.channel.basic_publish(exchange='',
+                                   routing_key=self.queue,
+                                   body=message)
         #print 'Done sending: ', message
-
 
     # declare a callback to process received message
     def callback(self, ch, method, properties, body):
@@ -59,12 +62,13 @@ class MessageQueue:
         else:
             fileDict = self.es.search(index=base_image, filename=file_path)
             if fileDict == None:
-                print "skip file as its not present"
+                logger.debug("skip file as its not present")
                 return
             ref_sdhash = fileDict['_source']['sdhash']
             features = sdhash.split(":")[10:12]
             if int(features[0]) < 2 and int(features[1]) < 16:
-                print "skipping since only one component with < 16 features"
+                logger.debug("skipping since only one component \
+                with < 16 features")
                 return
             with open("file_hash", "w") as f:
                 f.write(sdhash)
@@ -77,7 +81,7 @@ class MessageQueue:
             resline = resline.strip()
             score = resline.split('|')[-1]
             if score == "100":
-                print file + ' match 100%'
+                logger.debug(file + ' match 100%')
             else:
                 try:
                     file_path = string.replace(file_path, ':', '_')
@@ -85,9 +89,10 @@ class MessageQueue:
                                                    file_path,
                                                    '--no-summary'],
                                                   stderr=sub.STDOUT)
-                    print "clamscan's result: %s, file: %s" % (clamresult, file_path)
+                    logger.debug("clamscan's result: %s, file: %s" %
+                                 (clamresult, file_path))
                 except sub.CalledProcessError as ex:
-                    print "returncode other than 0 for ", file_path
+                    logger.error("returncode other than 0 for ", file_path)
                     clamresult = ex.output
                 judgeIndex = 'judgeresult:' + image
                 # TODO if use index_file, here the body will
@@ -104,10 +109,11 @@ class MessageQueue:
 
     # continuously process messages
     def start_consuming(self):
-        self.channel.basic_consume(self.callback, queue=self.queue, no_ack=True)
+        self.channel.basic_consume(self.callback,
+                                   queue=self.queue,
+                                   no_ack=True)
         print('Waiting for messages. To exit press CTRL+C')
         self.channel.start_consuming()
-
 
     # close connection when done
     def close(self):
