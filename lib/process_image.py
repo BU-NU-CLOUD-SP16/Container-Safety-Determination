@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 TEMP_DIR = "/opt/csd/tmp/csdproject"
 
+
 # cmd is a list: cmd and options if any
 def exec_cmd(cmd):
     p = sub.Popen(cmd, stdout=sub.PIPE, stderr=sub.PIPE)

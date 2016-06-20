@@ -39,8 +39,8 @@ def compare_hashes(hash1, hash2):
         file1 = os.path.abspath('file_hash')
         file2 = os.path.abspath('ref_hash')
         result = compare_files(file1, file2)
-        os.remove("file_hash")
-        os.remove("ref_hash")
+        os.remove(file1)
+        os.remove(file2)
         return result
     except:
         logger.debug("comparing sdhashes failed.")

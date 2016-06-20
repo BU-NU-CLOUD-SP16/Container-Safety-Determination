@@ -20,7 +20,7 @@ import subprocess as sub
 import string
 import logging
 
-from lib.sdhash import exec_cmd
+from lib.sdhash import exec_cmd, valid_hash, compare_hashes
 logger = logging.getLogger(__name__)
 
 class MessageQueue:
@@ -60,26 +60,16 @@ class MessageQueue:
                     'basename': basename}
             self.es.index(index=base_image, filename=file_path, body=body)
         else:
+            if not valid_hash(sdhash):
+                return
+
             fileDict = self.es.search(index=base_image, filename=file_path)
             if fileDict == None:
                 logger.debug("skip file as its not present")
                 return
+
             ref_sdhash = fileDict['_source']['sdhash']
-            features = sdhash.split(":")[10:12]
-            if int(features[0]) < 2 and int(features[1]) < 16:
-                logger.debug("skipping since only one component \
-                with < 16 features")
-                return
-            with open("file_hash", "w") as f:
-                f.write(sdhash)
-            with open("ref_hash", "w") as f:
-                f.write(ref_sdhash)
-            file1 = os.path.abspath('file_hash')
-            file2 = os.path.abspath('ref_hash')
-            # TODO: error handling
-            resline = exec_cmd(['sdhash', '-c', file1, file2, '-t', '0'])
-            resline = resline.strip()
-            score = resline.split('|')[-1]
+            score = compare_hashes(sdhash, ref_sdhash)
             if score == "100":
                 logger.debug(file + ' match 100%')
             else:
@@ -104,8 +94,6 @@ class MessageQueue:
                         'safe': False,
                         'clamscan-result': clamresult}
                 self.es.index(index=judgeIndex, filename=file, body=body)
-            os.remove("file_hash")
-            os.remove("ref_hash")
 
     # continuously process messages
     def start_consuming(self):

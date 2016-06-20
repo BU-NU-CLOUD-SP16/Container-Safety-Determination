@@ -7,6 +7,7 @@
 import os
 import sys
 
+# start from the root directory
 sys.path.append("..")
 
 from db.elasticsearch.elasticdatabase import ElasticDatabase
