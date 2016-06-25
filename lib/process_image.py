@@ -208,10 +208,10 @@ def process_sdhash(imagename, base_image, srcdir, msg_queue, operation):
                 message = {}
                 message['image'] = imagename
                 message['base_image'] = base_image
-                message['relative_path'] = relative_path
+                message['path_in_image'] = relative_path
                 message['operation'] = operation
                 message['sdhash'] = sdhash
-                message['file_path'] = file_path
+                message['local_path'] = file_path
 
                 msg_queue.send(json.dumps(message))
 

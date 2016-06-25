@@ -15,10 +15,9 @@
 
 import pika
 import json
-import os
-import subprocess as sub
-import string
 import logging
+
+from lib.clamav import clamscan
 
 from lib.sdhash import exec_cmd, valid_hash, compare_hashes
 logger = logging.getLogger(__name__)
@@ -47,23 +46,23 @@ class MessageQueue:
         data = json.loads(body)
         image = data['image']
         base_image = data['base_image']
-        file_path = data['relative_path']
+        path_in_image = data['path_in_image']
         operation = data['operation']
         sdhash = data['sdhash']
-        file = data['file_path']
+        local_path = data['local_path']
 
         # We always store only the base images for reference
         if operation == "store":
-            basename = file_path.split('/')[-1]
-            body = {'file': file_path,
+            basename = path_in_image.split('/')[-1]
+            body = {'file': path_in_image,
                     'sdhash': sdhash,
                     'basename': basename}
-            self.es.index(index=base_image, filename=file_path, body=body)
+            self.es.index(index=base_image, filename=path_in_image, body=body)
         else:
             if not valid_hash(sdhash):
                 return
 
-            fileDict = self.es.search(index=base_image, filename=file_path)
+            fileDict = self.es.search(index=base_image, filename=path_in_image)
             if fileDict == None:
                 logger.debug("skip file as its not present")
                 return
@@ -71,29 +70,21 @@ class MessageQueue:
             ref_sdhash = fileDict['_source']['sdhash']
             score = compare_hashes(sdhash, ref_sdhash)
             if score == "100":
-                logger.debug(file + ' match 100%')
+                logger.debug(path_in_image + ' match 100%')
             else:
-                try:
-                    file_path = string.replace(file_path, ':', '_')
-                    clamresult = sub.check_output(['clamscan',
-                                                   file_path,
-                                                   '--no-summary'],
-                                                  stderr=sub.STDOUT)
-                    logger.debug("clamscan's result: %s, file: %s" %
-                                 (clamresult, file_path))
-                except sub.CalledProcessError as ex:
-                    logger.error("returncode other than 0 for ", file_path)
-                    clamresult = ex.output
+                # scan using clamAV
+                clamresult = clamscan(local_path)
+
                 judgeIndex = 'judgeresult:' + image
                 # TODO if use index_file, here the body will
                 # be {'sdhash': resline}.  Better change the key
-                basename = file.split('/')[-1]
-                body = {'file': file,
+                basename = path_in_image.split('/')[-1]
+                body = {'file': path_in_image,
                         'sdhash': sdhash,
                         'basename': basename,
                         'safe': False,
                         'clamscan-result': clamresult}
-                self.es.index(index=judgeIndex, filename=file, body=body)
+                self.es.index(index=judgeIndex, filename=path_in_image, body=body)
 
     # continuously process messages
     def start_consuming(self):

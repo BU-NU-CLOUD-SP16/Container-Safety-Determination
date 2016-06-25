@@ -1,7 +1,6 @@
 __author__ = 'rahuls@ccs.neu.edu'
 
 import os
-import sys
 import json
 import string
 import logging
@@ -73,7 +72,6 @@ def process(id, base, operation, elasticDB):
 
     msg_queue = MessageQueue('localhost', 'dockerqueue', elasticDB)
 
-    #changed_files = {}  # filename => similarity score
     res = exec_cmd(['docker', 'diff', id])
     if res is None:
         return json.dumps({'error': 'Error running docker diff.'})
@@ -89,10 +87,16 @@ def process(id, base, operation, elasticDB):
         os.mkdir(temp_dir)
 
     for filename in files_only:
+        # TODO: There is a bug here. If two files are present with same name
+        # in different directories, then the program will copy them to the
+        # same directory. It might happen that while the hash is in queue,
+        # the file gets replaced by other file and hence, the clamav scan
+        # result will differ. Need to fix this.
         copy_from_container(id + ':' + filename, temp_dir)
+
         basename = os.path.basename(filename)
         file_path = os.path.join(os.path.abspath(temp_dir), basename)
-        #file_sdhash = exec_cmd(['sdhash', file_path])
+
         file_type = exec_cmd(['file', file_path])
 
         # only process binary, library files and scripts
@@ -105,6 +109,7 @@ def process(id, base, operation, elasticDB):
                 continue
             srcdir = os.path.abspath(temp_dir)
             sdhash = gen_hash(srcdir, basename)
+
             # remove starting '/' from file's path
             relative_path = filename[1:]
             relative_path = string.replace(relative_path, ':', '_')
@@ -112,17 +117,16 @@ def process(id, base, operation, elasticDB):
             message = {}
             message['image'] = id
             message['base_image'] = base
-            message['relative_path'] = relative_path
+            message['path_in_image'] = relative_path
             message['operation'] = operation
             message['sdhash'] = sdhash
-            message['file_path'] = filename # path in container
+            message['local_path'] = file_path # path in container
 
             msg_queue.send(json.dumps(message))
 
 
 def check_container(container_id):
-    """
-    Check a running container for files that have been changed. If a file
+    """Check a running container for files that have been changed. If a file
     been changed, determine if it's suspicious by checking if the reference
     dataset contains a file with the same path. If so compare the hash of
     the file with the reference hash.

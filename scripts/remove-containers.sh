@@ -7,6 +7,9 @@
 #                                                                   #
 #####################################################################
 
+# UPDATE: the same thing can be done in one line:
+# docker rm $(docker ps -aq)
+
 containers=($(docker ps -a | awk -F' ' '{print $1}'))
 
 # skip the first element as it is 'CONTAINER'
