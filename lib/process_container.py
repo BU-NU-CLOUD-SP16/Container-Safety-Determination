@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 from db.elasticsearch.elasticdatabase import ElasticDatabase
 from scripts.esCfg import EsCfg
 from scripts.messagequeue import MessageQueue
+from process_image import process as process_img
+from lib.sdhash import gen_hash
 
 TEMP_DIR = "/opt/csd/tmp/csdproject"
 
@@ -64,16 +66,12 @@ def copy_from_container(src, dest):
 
 
 def process(id, base, operation, elasticDB):
-    if operation == 'store':
-        logger.debug('Processing image: %s. Operation is: %s' %
-                     (id, operation))
-    else:
-        logger.debug('Processing container: %s, Operation is: %s' %
-                     (id, operation))
+    logger.debug('Processing container: %s, Operation is: %s' %
+                 (id, operation))
 
     msg_queue = MessageQueue('localhost', 'dockerqueue', elasticDB)
 
-    changed_files = {}  # filename => similarity score
+    #changed_files = {}  # filename => similarity score
     res = exec_cmd(['docker', 'diff', id])
     if res is None:
         return json.dumps({'error': 'Error running docker diff.'})
@@ -92,7 +90,7 @@ def process(id, base, operation, elasticDB):
         copy_from_container(id + ':' + filename, temp_dir)
         basename = os.path.basename(filename)
         file_path = os.path.join(os.path.abspath(temp_dir), basename)
-        file_sdhash = exec_cmd(['sdhash', file_path])
+        #file_sdhash = exec_cmd(['sdhash', file_path])
         file_type = exec_cmd(['file', file_path])
 
         # only process binary, library files and scripts
@@ -103,9 +101,10 @@ def process(id, base, operation, elasticDB):
                 continue
             if size < 1024:
                 continue
-            # remove srcdir and leading '/' from the path
+            srcdir = os.path.abspath(temp_dir)
+            sdhash = gen_hash(srcdir, basename)
+            # remove starting '/' from file's path
             relative_path = filename[1:]
-            sdhash = gen_hash(srcdir, file_path, relative_path)
             relative_path = string.replace(relative_path, ':', '_')
 
             message = {}
@@ -114,7 +113,7 @@ def process(id, base, operation, elasticDB):
             message['relative_path'] = relative_path
             message['operation'] = operation
             message['sdhash'] = sdhash
-            message['file_path'] = file_path
+            message['file_path'] = filename # path in container
 
             msg_queue.send(json.dumps(message))
 
@@ -136,7 +135,7 @@ def check_container(container_id):
     elasticDB = ElasticDatabase(EsCfg)
     if not elasticDB.check_index_exists(base_image):
         logger.debug('Indexing missing base image: ', base_image)
-        process(base_image, base_image, 'store', elasticDB)
+        process_img(base_image, base_image, base_image, 'store', elasticDB)
 
     logger.debug('Reference index is: ', base_image)
     process(container_id, base_image, 'scan', elasticDB)

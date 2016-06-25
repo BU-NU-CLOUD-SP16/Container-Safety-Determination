@@ -200,7 +200,7 @@ def process_sdhash(imagename, base_image, srcdir, msg_queue, operation):
                     continue
                 # remove srcdir and leading '/' from the path
                 relative_path = file_path.replace(srcdir, '', 1)[1:]
-                sdhash = gen_hash(srcdir, file_path, relative_path)
+                sdhash = gen_hash(srcdir, relative_path)
                 relative_path = string.replace(relative_path, ':', '_')
 
                 message = {}

@@ -55,7 +55,7 @@ def valid_hash(hash):
     return True
 
 
-def gen_hash(srcdir, file_path, relative_path):
+def gen_hash(srcdir, relative_path):
     full_path = os.path.join(srcdir, relative_path)
     if ':' in relative_path:
         relative_path = string.replace(relative_path, ':', '_')
