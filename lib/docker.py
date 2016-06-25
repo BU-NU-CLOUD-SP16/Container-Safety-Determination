@@ -27,7 +27,9 @@ import subprocess as sub
 
 from scripts.elasticdatabase import ElasticDatabase
 from scripts.messagequeue import MessageQueue
-from scripts.esCfg import EsCfg
+
+from endpoint.endpoint import es_host
+from endpoint.endpoint import es_port
 
 
 logger = logging.getLogger(__name__)

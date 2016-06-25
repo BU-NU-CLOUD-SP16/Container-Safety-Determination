@@ -10,10 +10,12 @@ import subprocess as sub
 logger = logging.getLogger(__name__)
 
 from db.elasticsearch.elasticdatabase import ElasticDatabase
-from scripts.esCfg import EsCfg
 from scripts.messagequeue import MessageQueue
 from process_image import process as process_img
 from lib.sdhash import gen_hash
+
+from endpoint.endpoint import es_host
+from endpoint.endpoint import es_port
 
 TEMP_DIR = "/opt/csd/tmp/csdproject"
 
@@ -132,7 +134,7 @@ def check_container(container_id):
     if base_image is None:
         return json.dumps({'error': 'failed to get container base image'})
 
-    elasticDB = ElasticDatabase(EsCfg)
+    elasticDB = ElasticDatabase({'host': es_host, 'port': es_port})
     if not elasticDB.check_index_exists(base_image):
         logger.debug('Indexing missing base image: ', base_image)
         process_img(base_image, base_image, base_image, 'store', elasticDB)

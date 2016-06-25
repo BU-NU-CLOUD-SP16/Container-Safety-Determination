@@ -9,8 +9,10 @@ import subprocess as sub
 
 from sdhash import gen_hash
 from db.elasticsearch.elasticdatabase import ElasticDatabase
-from scripts.esCfg import EsCfg
 from scripts.messagequeue import MessageQueue
+
+from endpoint.endpoint import es_host
+from endpoint.endpoint import es_port
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +217,7 @@ def process_sdhash(imagename, base_image, srcdir, msg_queue, operation):
 
 
 def hash_and_index(imagename, operation):
-    elasticDB = ElasticDatabase(EsCfg)
+    elasticDB = ElasticDatabase({'host': es_host, 'port': es_port})
     base_image = get_base(imagename)
     print 'Base image is: ', base_image
 

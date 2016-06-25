@@ -38,8 +38,6 @@ sys.path.append(os.getcwd() + "/../")
 from lib.process_container import check_container
 from lib.process_image import hash_and_index
 
-from scripts.esCfg import EsCfg
-
 CUR_DIR=""
 
 app = Flask(__name__)
@@ -54,6 +52,9 @@ config.read(CONFIG_FILE)
 username = config.get('registry', 'username')
 password = config.get('registry', 'password')
 auth = (username, password)
+
+es_host = config.get('elasticsearch', 'host')
+es_port = config.get('elasticsearch', 'port')
 
 logging.config.fileConfig('../logging.conf')
 logger = logging.getLogger(__file__)
@@ -126,7 +127,7 @@ def scan_container(container_id):
 
 @app.route('/get_judge_res/<judge_image_dir>')
 def get_judge_res(judge_image_dir):
-    es = Elasticsearch(EsCfg)
+    es = Elasticsearch({'host': es_host, 'port': es_port})
     judge_image_dir = 'judgeresult:' + judge_image_dir
     search_size = 20
     search_offset = 0
@@ -156,7 +157,7 @@ def get_judge_res(judge_image_dir):
 
 @app.route('/correct_false_warning/<judge_image_dir>')
 def correct_false_warning(judge_image_dir):
-    es = Elasticsearch(EsCfg)
+    es = Elasticsearch({'host': es_host, 'port': es_port})
     if 'file_name' in request.args:
         md5_file_name = hashlib.md5(request.args['file_name']).hexdigest()
         print md5_file_name + ' for ' + request.args['file_name']
@@ -176,7 +177,7 @@ def correct_false_warning(judge_image_dir):
 # TODO: Need to fix this method [05/16/2016]
 @app.route('/docker_run/')
 def docker_run():
-    es = Elasticsearch(EsCfg)
+    es = Elasticsearch({'host': es_host, 'port': es_port})
     #check es again
 
     #check finished, run docker image
